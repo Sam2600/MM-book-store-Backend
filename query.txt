@@ -1,0 +1,39 @@
+Step 2: Use Eager Loading (with()) to Prevent N+1 Queries
+
+For example, to get novels with all volumes and their chapters:
+
+$novels = Novel::with('author', 'volumes.chapters', 'categories')->paginate(10);
+
+This will load:
+
+   The novel’s author
+
+   All volumes belonging to each novel
+
+   All chapters within each volume
+
+   The categories the novel belongs to
+
+That’s 1 query + a few joins instead of 100s of queries.
+
+✅ Step 3: Use Join When You Need Filtering/Sorting on Related Table Fields
+
+If you need to filter or sort based on related table columns (e.g. get all novels where author's name is ‘John’), you can join like this:
+
+$novels = Novel::select('novels.*') ->join('users', 'users.id', '=', 'novels.translator_id') ->where('users.name', 'John') ->with('author', 'volumes.chapters', 'categories') ->get();
+
+✅ Bonus Tip: Use Indexes
+
+Make sure your foreign keys (like novel_id, volume_id, translator_id) are indexed in your migrations to speed up joins and lookups.
+
+Example:
+
+$table->unsignedBigInteger('translator_id')->index();
+
+✅ Conclusion
+
+With proper relationship definitions + eager loading + join queries where needed, you’ll get both readable Eloquent and fast query performance.
+
+If you want, I can also show you how to cache common queries like homepage novel listings or hot categories with Laravel cache for super fast loading.
+
+Let me know if you'd like example optimized controller methods too!

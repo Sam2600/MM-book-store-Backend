@@ -11,6 +11,8 @@ return [
     "SS005" => "Logout Successful.",
     "SS006" => ":attribute sent successfully.",
     "SS007" => "This user is authenticate.",
+    "SS008" => "Data get successfully.",
+    "SS009" => ":attribute assigned successfully.",
 
     //for error
     "SE001" => "Fail to Save Data!",

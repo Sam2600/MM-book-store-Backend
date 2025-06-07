@@ -30,7 +30,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/novels', [NovelController::class, 'store']);
     Route::post('/novels/{novel}/volumes', [VolumeController::class, 'store']);
     Route::post('/chapters', [ChapterController::class, 'store']);
-    Route::post('/novels/{novel}/categories', [NovelController::class, 'assignCategories']);
+    Route::post('/novels/{novel}/categories', [CategoryController::class, 'assignCategories']);
 
     Route::get('/novelsByAuthors', [NovelController::class, 'getNovelsByAuthor']);
 });

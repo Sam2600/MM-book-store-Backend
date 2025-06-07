@@ -5,10 +5,10 @@ namespace App\Http\Requests;
 use Illuminate\Foundation\Http\FormRequest;
 
 /**
- * @property string $email
- * @property string|int $password
+ * @property array $category_ids
+ * @property string|int $category_ids
  */
-class AuthUserLoginRequest extends FormRequest
+class CategoryAssignRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -26,8 +26,8 @@ class AuthUserLoginRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'email' => 'required|email',
-            'password' => 'required',
+            'category_ids' => 'required|array',
+            'category_ids.*' => 'exists:categories,id',
         ];
     }
 }

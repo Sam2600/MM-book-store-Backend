@@ -5,10 +5,10 @@ namespace App\Http\Requests;
 use Illuminate\Foundation\Http\FormRequest;
 
 /**
- * @property string $email
- * @property string|int $password
+ * @property array $title
+ * @property string|int $order
  */
-class AuthUserLoginRequest extends FormRequest
+class VolumeRegisterRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -26,8 +26,8 @@ class AuthUserLoginRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'email' => 'required|email',
-            'password' => 'required',
+            'title' => 'required|string',
+            'order' => 'nullable|integer'
         ];
     }
 }

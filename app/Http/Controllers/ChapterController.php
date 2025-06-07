@@ -2,108 +2,101 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use App\Models\Chapter;
 use App\Models\Novel;
 use App\Models\Volume;
+use App\Models\Chapter;
+use App\Helpers\Helper;
+use App\Helpers\ApiResponse;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
+use App\Http\Requests\ChapterRegisterRequest;
+use App\Interfaces\Novel\NovelRepositoryInterface;
+use App\Interfaces\Volume\VolumeRepositoryInterface;
+use App\Interfaces\Chapter\ChapterRepositoryInterface;
 
 class ChapterController extends Controller
 {
-    public function store(Request $request)
+    use Helper, ApiResponse;
+
+    public function __construct(
+        private NovelRepositoryInterface $novelI,
+        private VolumeRepositoryInterface $volumeI,
+        private ChapterRepositoryInterface $chapterI,
+    ) {}
+
+    public function store(ChapterRegisterRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'novel_id' => 'required|exists:novels,id',
-            'volume_id' => 'required|integer',
-            'chapter_id' => 'required|integer',
-            'title' => 'required|string',
-            'volume_title' => 'required|string',
-            'content' => 'required|string',
-        ]);
+        /** @var \Illuminate\Http\Request $request */
 
         try {
 
             DB::beginTransaction();
 
-            $volume = Volume::where('volume_number', $validated['volume_id'])
-                        ->where('novel_id', $validated['novel_id'])
-                        ->first();
+            $volume = $this->volumeI->checkVolumeByIds($request->novel_id, $request->volume_id);
 
             if (!$volume) {
 
                 // Create a new volume if none provided
-                $volumeCount = Volume::where('volume_number', $validated['novel_id'])->count();
+                $volumeCount = $this->volumeI->getNovelTotalVolumeById($request->novel_id);
 
-                $volume = Volume::create([
-                    'volume_number' => $validated['volume_id'],
-                    'novel_id' => $validated['novel_id'],
-                    'volume_title' => $validated['volume_title'] ?? 'Volume ' . ($volumeCount + 1),
-                    'order' => $volumeCount + 1,
-                ]);
+                $vol = [
+                    "order" => $volumeCount + 1,
+                    "novel_id" => $request->novel_id,
+                    "volume_number" => $request->volume_id,
+                    "volume_title" => $request->volume_title ?? "Volume " . ($volumeCount + 1),
+                ];
+
+                $volume = Volume::create($vol);
             }
 
-            $chapter = Chapter::create([
-                'volume_id' => $volume->volume_number,
-                'title' => $validated['title'],
-                'content' => $validated['content'],
-            ]);
+            $chpt = [
+                "title" => $request->title,
+                "content" => $request->content,
+                "volume_id" => $volume->volume_number,
+            ];
+
+            $chapter = Chapter::create($chpt);
 
             DB::commit();
 
-            return response()->json([
-                'message' => 'Chapter is created successfully.',
-                'data' => [
-                    'chapter' => $chapter,
-                    'volume' => $volume,
-                ]
-            ], 201);
+            $data = compact("volume", "chapter");
 
-        } catch (\Exception $e) {
+            return $this->success( __("messages.SS001", ["attribute" => "Chapter"]), $data);
+
+        } catch (\Throwable $th) {
 
             DB::rollBack();
             
-            Log::info($e->getMessage());
+            $this->logException($th);
 
-            return response()->json([
-                'message' => 'Internal Server Error',
-                'error' => 'Something went wrong. Please try again later.'
-            ], 500);
+            return $this->error(__("messages.SE010"), []);
         }
     }
 
-    public function show($novelId, $volumeId, $chapterId)
+    public function show(int|String $novelId, int|String $volumeId, int|String $chapterId): JsonResponse
     {
         
         try {
             // Check if the novel exists
-            $novel = Novel::findOrFail($novelId);
+            $novel = $this->novelI->getNovelById($novelId);
 
             // Find the chapter belonging to this novel
-            $volume = Volume::where('novel_id', $novelId)
-                            ->where('volume_number', $volumeId)
-                            ->firstOrFail();
+            $volume = $this->volumeI->checkVolumeByIds($novelId, $volumeId);
 
             // Find the chapter belonging to this novel
-            $chapter = Chapter::where('volume_id', $volume->volume_number)
-                            ->where('id', $chapterId)
-                            ->firstOrFail();
+            $chapter = $this->chapterI->getChatperByIds($volume->volume_number, $chapterId);
 
-        } catch (\Exception $e) {
+            $data = compact("novel", "chapter");
+
+            return $this->success( __("messages.SS008"), $data);
+
+        } catch (\Throwable $th) {
 
             DB::rollBack();
             
-            Log::info($e->getMessage());
+            $this->logException($th);
 
-            return response()->json([
-                'message' => 'Internal Server Error',
-                'error' => $e->getMessage()
-            ], 500);
+            return $this->error(__("messages.SE010"), []);
         }
-
-        return response()->json([
-            'novel' => $novel,
-            'chapter' => $chapter
-        ]);
     }
 }

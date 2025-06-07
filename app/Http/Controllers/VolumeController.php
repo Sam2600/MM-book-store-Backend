@@ -2,24 +2,42 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use App\Models\Novel;
-
+use App\Helpers\Helper;
+use App\Helpers\ApiResponse;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\DB;
+use App\Http\Requests\VolumeRegisterRequest;
 
 class VolumeController extends Controller
-{
-    public function store(Request $request, Novel $novel)
+{   
+    use Helper, ApiResponse;
+    
+    public function store(VolumeRegisterRequest $request, Novel $novel): JsonResponse
     {
-        $request->validate([
-            'title' => 'required|string',
-            'order' => 'nullable|integer'
-        ]);
+        try {
 
-        $volume = $novel->volumes()->create([
-            'title' => $request->title,
-            'order' => $request->order ?? 1
-        ]);
+            DB::beginTransaction();
 
-        return response()->json($volume, 201);
+            $nov = [
+                "title" => $request->title,
+                "order" => $request->order ?? 1
+            ];
+
+            $novel->volumes()->create($nov);
+
+            DB::commit();
+
+            return $this->success(__("messages.SS001", ["attribute" => "Volume"]));
+
+        } catch (\Throwable $th) {
+
+            DB::rollBack();
+            
+            $this->logException($th);
+
+            return $this->error(__("messages.SE010"), []);
+        }
+        
     }
 }

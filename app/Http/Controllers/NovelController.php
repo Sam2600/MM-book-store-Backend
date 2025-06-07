@@ -2,220 +2,153 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use App\Models\Novel;
-use App\Models\Category;
+use App\Helpers\Helper;
 use App\Models\NovelView;
-use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\Auth;
+use App\Helpers\ApiResponse;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
+use App\Http\Requests\NovelRegisterRequest;
+use App\Interfaces\Novel\NovelRepositoryInterface;
+
 
 class NovelController extends Controller
 {
-    public function index()
-    {
+    use Helper, ApiResponse;
 
+    public function __construct(private NovelRepositoryInterface $novelI){}
+    
+    public function index(): JsonResponse
+    {
         try {
 
-            $all_novel = $this->getAllNovels();
-            $latest_novel = $this->latestNovels();
-            $popular_week = $this->popularThisWeek();
-            $popular_month = $this->popularThisMonth();
-            $popular_all_time = $this->popularAllTime();
-            $categories = $this->getAllCategories();
+            $all_novel = $this->novelI->getNovels();
+            $categories = $this->novelI->getCategories();
+            $latest_novel = $this->novelI->getLatestNovels();
+            $popular_week = $this->novelI->getPopularThisWeekNovels();
+            $popular_month = $this->novelI->getPopularThisMonthNovels();
+            $popular_all_time = $this->novelI->getPopularAllTimeNovels();
 
-        } catch (\Exception $e) {
+            $data = compact(
+                "all_novel",
+                "categories",
+                "latest_novel",
+                "popular_week",
+                "popular_month",
+                "popular_all_time"
+            );
+
+            return $this->success(
+                __("messages.SS008"), $data
+            );
+
+        } catch (\Throwable $th) {
             
-            Log::info($e->getMessage());
+            $this->logException($th);
 
-            return response()->json([
-                'message' => 'Internal Server Error',
-                'error' => $e->getMessage()
-            ], 500);
+            return $this->error(__("messages.SE010"), []);
         }
-
-        return response()->json([
-            "all_novel" => $all_novel,
-            "latest_novel" => $latest_novel, 
-            "popular_week" => $popular_week, 
-            "popular_month" => $popular_month, 
-            "popular_all_time" => $popular_all_time,
-            "categories" => $categories
-        ]);
     }
 
-    public function store(Request $request)
-    {
-        $request->validate([
-            'title' => 'required|string|max:255',
-            'original_author_name' => 'required|string',
-            'original_book_name' => 'required|string',
-            'description' => 'nullable|string',
-            'cover_image' => 'nullable|file|image|max:2048',
-            'categories' => 'required|array',
-            'categories.*' => 'exists:categories,id',
-        ]);
+    public function store(NovelRegisterRequest $request): JsonResponse
+    {   
+        /** @var \Illuminate\Http\Request $request */
 
         try {
 
             DB::beginTransaction();
-
+            
             $path = "";
-            if ($request->hasFile('cover_image')) {
-                $file = $request->file('cover_image');
-                $filename = uniqid().'_'.$file->getClientOriginalName();
-                $path = $file->storeAs('uploads', $filename, 'public');
+
+            if ($request->hasFile("cover_image")) {
+                $path = $this->storeFile($request);
             }
 
-            $novel = Novel::create([
-                'translator_id' => $request->user()->id,
-                'original_author_name' => $request->original_author_name,
-                'original_book_name' => $request->original_book_name,
-                'title' => $request->title,
-                'description' => $request->description,
-                'cover_image' => $path,
-                'status' => $request->status == 1 ? "completed" : "ongoing",
-            ]);
+            $novel = [
+                "cover_image" => $path,
+                "title" => $request->title,
+                "description" => $request->description,
+                "translator_id" => $request->user()->id,
+                "original_book_name" => $request->original_book_name,
+                "original_author_name" => $request->original_author_name,
+                "status" => $request->status == 1 ? "completed" : "ongoing",
+            ];
+
+            $novel = Novel::create($novel);
 
             $novel->categories()->attach($request->category_ids);
 
             DB::commit();
 
-            return response()->json([
-                'message' => 'Novel is created successfully'
-            ], 201);
+            return $this->success( __("messages.SS001", ["attribute" => "Novel"]));
 
-        } catch (\Exception $e) {
+        } catch (\Throwable $th) {
 
             DB::rollBack();
 
-            Log::info($e->getMessage());
+            $this->logException($th);
 
-            return response()->json([
-                'message' => 'Internal Server Error',
-                'error' => $e->getMessage()
-            ], 500);
+            if (!empty($path)) {
+                $this->deleteFile($path);
+            }
+
+            return $this->error(__("messages.SE010"), []);
         }
     }
 
-    public function getAllNovels()
-    {
-        return Novel::select('id', 'title')->get();
-    }
-
-    public function popularThisWeek()
-    {
-        $weekStart = Carbon::now()->startOfWeek();
-        $weekEnd = Carbon::now()->endOfWeek();
-
-        $popular = Novel::with([
-            'categories:id,name' // Eager load only id and name from categories
-        ])->withCount([
-            'views as view_count' => function ($query) use ($weekStart, $weekEnd) {
-                $query->whereBetween('created_at', [$weekStart, $weekEnd]);
-            }
-        ])
-        ->select('id', 'title', 'status', 'cover_image')
-        ->orderByDesc('view_count')
-        ->take(10)
-        ->get()
-        ->makeHidden(['created_at', 'updated_at']);
-
-        return $popular;
-    }
-
-    public function popularAllTime()
-    {
-        return Novel::with('categories')->select('id', 'title', 'description', 'cover_image')->orderByDesc('view_count')->take(5)->get()->makeHidden(['created_at', 'updated_at']);
-    }
-
-    public function popularThisMonth()
-    {
-        $monthStart = Carbon::now()->startOfMonth();
-        $monthEnd = Carbon::now()->endOfMonth();
-
-        $popular = Novel::with([
-            'categories:id,name' // Eager load only id and name from categories
-        ])->withCount([
-            'views as view_count' => function ($query) use ($monthStart, $monthEnd) {
-                $query->whereBetween('created_at', [$monthStart, $monthEnd]);
-            }
-        ])
-        ->select('id', 'title', 'status', 'cover_image')
-        ->orderByDesc('view_count')
-        ->take(10)
-        ->get()
-        ->makeHidden(['created_at', 'updated_at']);
-
-        return $popular;
-    }
-
-    public function latestNovels() { 
-        return Novel::select('id', 'title', 'description', 'created_at')->orderBy('created_at', 'desc')->take(5)->get();
-    }
-
-    public function getAllCategories() {
-        return Category::select('id', 'name')->get();
-    }
-
-    public function show($id)
+    public function show(int|String $id): JsonResponse
     {
         try {
-            $novel = Novel::with([
-                'translator',
-                'categories',
-                'volumes.chapters'
-            ])
-            ->findOrFail($id)
-            ->makeHidden(['updated_at']);
 
             DB::beginTransaction();
 
-            NovelView::create([
-                'novel_id' => $novel->id,
-                'user_id' => auth()->id(),
-                'ip_address' => request()->ip(),
-            ]);
+            $novel = $this->novelI->getNovelDetailInfoById($id);
 
-            $novel->increment('view_count');
+            $data = [
+                "novel_id" => $novel->id,
+                "user_id" => auth()->id(),
+                "ip_address" => request()->ip(),
+            ];
+
+            NovelView::create($data);
+
+            $novel->increment("view_count");
 
             DB::commit();
 
-            return response()->json($novel);
+            return $this->success(__("messages.SS008"));
 
-        } catch (\Exception $e) {
+        } catch (\Throwable $th) {
 
             DB::rollBack();
             
-            Log::info($e->getMessage());
+            $this->logException($th);
 
-            return response()->json([
-                'message' => 'Internal Server Error',
-                'error' => $e->getMessage()
-            ], 500);
+            return $this->error(__("messages.SE010"), []);
         }
     }
 
-
-    public function assignCategories(Request $request, Novel $novel)
+    public function getNovelsByAuthor(): JsonResponse
     {
-        $request->validate([
-            'category_ids' => 'required|array',
-            'category_ids.*' => 'exists:categories,id',
-        ]);
+        $novels = $this->novelI->getNovelsByAuthor();
 
-        $novel->categories()->sync($request->category_ids);
-        return response()->json(['message' => 'Categories assigned']);
+        return $this->success(__("messages.SS008"), $novels);
     }
 
-    public function getNovelsByAuthor(Request $user)
+    private function storeFile(NovelRegisterRequest $request): String
+    {   
+         /** @var \Illuminate\Http\Request $request */
+
+        $file = $request->file("cover_image");
+
+        $filename = uniqid()."_".$file->getClientOriginalName();
+
+        return $file->storeAs("uploads", $filename, "public");
+    }
+
+    private function deleteFile(String $path): void
     {
-        $user = Auth::user();
-
-        $novels = Novel::where('translator_id', $user->id)->select('id', 'title')->get();
-
-        return response()->json($novels);
-
+        Storage::disk("public")->delete($path);
     }
 }

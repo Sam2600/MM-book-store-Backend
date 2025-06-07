@@ -3,23 +3,27 @@
 namespace App\Helpers;
 
 use Illuminate\Http\JsonResponse;
+use App\Constants\Api\ApiConstant;
 
 trait ApiResponse
 {
+    public function __construct(
+        private ApiConstant $apiConstant
+    ){}
+
     public function success(?string $message = null, mixed $data = null): JsonResponse
     {
         return response()->json([
-            "status" => "OK",
-            "form_access" => true,
+            "status" => $this->apiConstant::OK,
+            "message" => $message,
             "data" => $data,
-            "message" => $message
         ], 200);
     }
 
     public function error(string $message, mixed $data = null): JsonResponse
     {
         return response()->json([
-            "status" => "NG",
+            "status" => $this->apiConstant::NG,
             "message" => $message,
             "data" => $data
         ], 500);
@@ -28,7 +32,7 @@ trait ApiResponse
     public function badRequest(string $message): JsonResponse
     {
         return response()->json([
-            "status" => "NG",
+            "status" => $this->apiConstant::NG,
             "message" => $message
         ], 400);
     }
@@ -36,7 +40,7 @@ trait ApiResponse
     public function unAuthorized(string $message): JsonResponse
     {
         return response()->json([
-            "status" => "NG",
+            "status" => $this->apiConstant::NG,
             "message" => $message,
         ], 401);
     }
@@ -44,7 +48,7 @@ trait ApiResponse
     public function notFound(string $message): JsonResponse
     {
         return response()->json([
-            "status" => "NG",
+            "status" => $this->apiConstant::NG,
             "message" => $message,
         ], 404);
     }
@@ -52,7 +56,7 @@ trait ApiResponse
     public function forBidden(string $message): JsonResponse
     {
         return response()->json([
-            "status" => "NG",
+            "status" => $this->apiConstant::NG,
             "message" => $message,
         ], 403);
     }

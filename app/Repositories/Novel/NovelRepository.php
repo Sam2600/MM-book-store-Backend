@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Repositories;
+namespace App\Repositories\Novel;
 
 use Carbon\Carbon;
 use App\Models\Novel;

@@ -7,7 +7,7 @@ use App\Helpers\Helper;
 use App\Helpers\ApiResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
-use App\Constant\Auth\AuthConstant;
+use App\Constants\Auth\AuthConstant;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use App\Http\Requests\AuthUserLoginRequest;
@@ -18,7 +18,7 @@ class AuthController extends Controller
     use Helper, ApiResponse;
     
     public function __construct(
-        private readonly AuthConstant $authConstant,
+        private AuthConstant $authConstant,
     ) {}
 
     public function register(AuthUserRegisterRequest $request): JsonResponse

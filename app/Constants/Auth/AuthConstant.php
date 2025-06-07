@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Constant\Auth;
+namespace App\Constants\Auth;
 
 class AuthConstant {
 

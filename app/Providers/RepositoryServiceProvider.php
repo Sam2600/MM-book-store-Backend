@@ -2,8 +2,8 @@
 
 namespace App\Providers;
 
-use App\Repositories\NovelRepository;
 use Illuminate\Support\ServiceProvider;
+use App\Repositories\Novel\NovelRepository;
 use App\Repositories\Volume\VolumeRepository;
 use App\Repositories\Chapter\ChapterRepository;
 use App\Repositories\Category\CategoryRepository;

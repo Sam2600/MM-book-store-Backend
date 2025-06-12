@@ -34,7 +34,7 @@ class ChapterController extends Controller
 
             $volume = $this->volumeI->checkVolumeByIds($request->novel_id, $request->volume_id);
 
-            if (!$volume) {
+            if (is_null($volume)) {
 
                 // Create a new volume if none provided
                 $volumeCount = $this->volumeI->getNovelTotalVolumeById($request->novel_id);

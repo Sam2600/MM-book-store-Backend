@@ -117,7 +117,7 @@ class NovelController extends Controller
 
             DB::commit();
 
-            return $this->success(__("messages.SS008"));
+            return $this->success(__("messages.SS008"), $novel);
 
         } catch (\Throwable $th) {
 

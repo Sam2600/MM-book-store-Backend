@@ -101,6 +101,6 @@ class NovelRepository implements NovelRepositoryInterface
 
    public function getNovelById(int|String $id)
    {
-      return Novel::findOrFail($id);
+      return Novel::find($id);
    }
 }

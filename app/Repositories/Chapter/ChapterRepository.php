@@ -11,6 +11,6 @@ class ChapterRepository implements ChapterRepositoryInterface
    {
       return Chapter::where("volume_id", $volumeId)
          ->where("id", $chapterId)
-         ->firstOrFail();
+         ->first();
    }
 }

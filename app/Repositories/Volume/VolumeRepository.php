@@ -11,7 +11,7 @@ class VolumeRepository implements VolumeRepositoryInterface
    {
       return Volume::where("volume_number", $volumeId)
                ->where("novel_id", $novelId)
-               ->firstOrFail();
+               ->first();
    }
    
    public function getNovelTotalVolumeById(int|String $novelId)

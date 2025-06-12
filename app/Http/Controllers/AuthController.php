@@ -16,10 +16,6 @@ use App\Http\Requests\AuthUserRegisterRequest;
 class AuthController extends Controller
 {
     use Helper, ApiResponse;
-    
-    public function __construct(
-        private AuthConstant $authConstant,
-    ) {}
 
     public function register(AuthUserRegisterRequest $request): JsonResponse
     {   
@@ -29,7 +25,7 @@ class AuthController extends Controller
                 "name" => $request->name,
                 "email" => $request->email,
                 "password" => Hash::make($request->password),
-                "role" => $request->role ?? $this->authConstant::ROLE_ADMIN
+                "role" => $request->role ?? AuthConstant::ROLE_ADMIN
             ];
     
             User::create($userData);
@@ -60,7 +56,7 @@ class AuthController extends Controller
             $user = User::where("email", $request->email)->first();
 
             if (!$user) {
-                return $this->badRequest(__("messages.SE004"));
+                return $this->badRequest(__("messages.SE004", ["attribute" => "Login User"]));
             }
 
             if (Auth::attempt($credentials)) {
@@ -100,7 +96,7 @@ class AuthController extends Controller
 
             $token->delete();
 
-            return  $this->success(__("messages.SE004", ["attribute" => "Login User"]));
+            return  $this->success(__("messages.SS005"));
 
         } catch (\Throwable $th) {
 

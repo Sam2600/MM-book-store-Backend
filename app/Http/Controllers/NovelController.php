@@ -10,6 +10,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use App\Http\Requests\NovelRegisterRequest;
+use App\Interfaces\Category\CategoryRepositoryInterface;
 use App\Interfaces\Novel\NovelRepositoryInterface;
 
 
@@ -17,18 +18,40 @@ class NovelController extends Controller
 {
     use Helper, ApiResponse;
 
-    public function __construct(private NovelRepositoryInterface $novelI){}
+    public function __construct(
+        private NovelRepositoryInterface $novelI,
+        private CategoryRepositoryInterface $categoryI
+    ){}
     
     public function index(): JsonResponse
     {
         try {
 
             $all_novel = $this->novelI->getNovels();
-            $categories = $this->novelI->getCategories();
+            $categories = $this->categoryI->getCategories();
             $latest_novel = $this->novelI->getLatestNovels();
             $popular_week = $this->novelI->getPopularThisWeekNovels();
             $popular_month = $this->novelI->getPopularThisMonthNovels();
             $popular_all_time = $this->novelI->getPopularAllTimeNovels();
+
+            $disk = $this->getDisk();
+
+            /** @var Illuminate\Support\Facades\Storage $storage */
+            $storage = Storage::disk($disk);
+
+            $mapCoverImage = function(Novel $novel) use ($storage) {
+                
+                $novel->cover_image = !empty($novel->cover_image)
+                    ? $storage->url($novel->cover_image)
+                    : $storage->url(config("default.image.cover"));
+    
+                return $novel;  
+            };
+
+            $latest_novel = $latest_novel->map($mapCoverImage);
+            $popular_week = $popular_week->map($mapCoverImage);
+            $popular_month = $popular_month->map($mapCoverImage);
+            $popular_all_time = $popular_all_time->map($mapCoverImage);
 
             $data = compact(
                 "all_novel",
@@ -90,7 +113,8 @@ class NovelController extends Controller
             $this->logException($th);
 
             if (!empty($path)) {
-                $this->deleteFile($path);
+                $disk = $this->getDisk();
+                $this->deleteFile($disk, $path);
             }
 
             return $this->error(__("messages.SE010"), []);
@@ -147,8 +171,13 @@ class NovelController extends Controller
         return $file->storeAs("uploads", $filename, "public");
     }
 
-    private function deleteFile(String $path): void
+    private function deleteFile(String $disk, String $path): void
     {
-        Storage::disk("public")->delete($path);
+        Storage::disk($disk)->delete($path);
+    }
+
+    private function getDisk(): String
+    {
+        return config("filesystems.default");
     }
 }

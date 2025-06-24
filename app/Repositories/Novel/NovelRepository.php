@@ -71,12 +71,7 @@ class NovelRepository implements NovelRepositoryInterface
 
    public function getLatestNovels()
    {
-      return Novel::select('id', 'title', 'description', 'created_at')->orderBy('created_at', 'desc')->take(5)->get();
-   }
-
-   public function getCategories()
-   {
-      return Category::select('id', 'name')->get();
+      return Novel::select('id', 'title', 'description', 'cover_image', 'view_count', 'created_at')->orderBy('created_at', 'desc')->take(5)->get();
    }
 
    public function getNovelsByAuthor()
@@ -90,7 +85,8 @@ class NovelRepository implements NovelRepositoryInterface
 
    public function getNovelDetailInfoById(int $id)
    {
-      Novel::with([
+      dd(Novel::find($id));
+      return Novel::with([
          'translator',
          'categories',
          'volumes.chapters'

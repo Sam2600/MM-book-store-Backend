@@ -10,10 +10,10 @@ class Chapter extends Model
     use HasFactory;
 
     protected $fillable = [
-        'novel_id',
         'volume_id',
         'title',
         'content',
+        'coin_cost',
         'status'
     ];
 

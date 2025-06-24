@@ -14,8 +14,6 @@ interface NovelRepositoryInterface
 
    public function getLatestNovels();
 
-   public function getCategories();
-
    public function getNovelsByAuthor();
 
    public function getNovelDetailInfoById(int $id);

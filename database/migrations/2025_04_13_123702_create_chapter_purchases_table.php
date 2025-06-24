@@ -14,6 +14,8 @@ return new class extends Migration
         Schema::create('chapter_purchases', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
+            $table->foreignId('novel_id')->constrained()->onDelete('cascade');
+            $table->foreignId('volume_id')->constrained()->onDelete('cascade');
             $table->foreignId('chapter_id')->constrained()->onDelete('cascade');
             $table->timestamp('purchased_at');
             $table->timestamps();

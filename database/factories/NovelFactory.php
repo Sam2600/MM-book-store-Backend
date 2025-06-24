@@ -19,6 +19,8 @@ class NovelFactory extends Factory
     {
         return [
             'translator_id' => User::inRandomOrder()->first()->id,
+            'original_author_name' => $this->faker->name,
+            'original_book_name' => $this->faker->jobTitle(),
             'title' => $this->faker->sentence(3),
             'description' => $this->faker->paragraph,
             'view_count' => $this->faker->numberBetween(1000, 9000),

@@ -36,7 +36,7 @@ class DatabaseSeeder extends Seeder
             Volume::factory(3)->create(['novel_id' => $novel->id])->each(function ($volume) use ($novel) {
                 Chapter::factory(5)->create([
                     'volume_id' => $volume->id,
-                    'novel_id' => $novel->id,
+                    //'novel_id' => $novel->id,
                 ]);
             });
         });

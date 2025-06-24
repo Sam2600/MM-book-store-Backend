@@ -17,7 +17,9 @@ class VolumeFactory extends Factory
     public function definition(): array
     {
         return [
-            'title' => 'Volume ' . $this->faker->unique()->numberBetween(1, 100),
+            'volume_number' => $this->faker->unique()->numberBetween(1, 100),
+            'novel_id' => $this->faker->numberBetween(1, 10),
+            'volume_title' => $this->faker->sentence,
             'order' => $this->faker->numberBetween(1, 10),
         ];
     }

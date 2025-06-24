@@ -19,7 +19,7 @@ class ChapterFactory extends Factory
         return [
             'title' => $this->faker->sentence,
             'content' => $this->faker->paragraphs(5, true),
-            'summary' => $this->faker->sentence,
+            //'summary' => $this->faker->sentence,
         ];
     }
 }

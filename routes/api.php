@@ -8,6 +8,7 @@ use App\Http\Controllers\NovelController;
 use App\Http\Controllers\VolumeController;
 use App\Http\Controllers\ChapterController;
 use App\Http\Controllers\CategoryController;
+use Illuminate\Support\Facades\Storage;
 
 /*
 |--------------------------------------------------------------------------
@@ -39,3 +40,10 @@ Route::get('/novels', [NovelController::class, 'index']);
 Route::get('/novels/{id}', [NovelController::class, 'show']);
 Route::get('/novels/{novelId}/volumes/{volumeId}/chapters/{chapterId}', [ChapterController::class, 'show']);
 Route::get('/categories', [CategoryController::class, 'index']);
+
+Route::get('chapter-image', function(){
+    $disk = 'supabase.novel-coverimage';
+    $heroImage = Storage::disk('public')->get('defaults/wizard.jpg');
+    $uploadedPath = Storage::disk($disk)->put('wizard.jpg', $heroImage);
+    return Storage::disk($disk)->url($uploadedPath);
+});

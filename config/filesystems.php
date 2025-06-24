@@ -13,7 +13,9 @@ return [
     |
     */
 
-    'default' => env('FILESYSTEM_DISK', 'local'),
+    'default' => env('FILESYSTEM_DISK', 'public'),
+
+    'cloud' => env('FILESYSTEM_CLOUD', 's3'),
 
     /*
     |--------------------------------------------------------------------------
@@ -56,6 +58,34 @@ return [
             'throw' => false,
         ],
 
+        'supabase' => [
+
+            'novel-coverimage' => [
+                'driver' => 's3',
+                'key' => env('SUPABASE_ACCESS_KEY_ID'),
+                'secret' => env('SUPABASE_SECRET_ACCESS_KEY'),
+                'region' => env('SUPABASE_REGION'),
+                'bucket' => env('SUPABASE_BUCKET'),
+                'endpoint' => env('SUPABASE_ENDPOINT'),
+                'use_path_style_endpoint' => env('SUPABASE_USE_PATH_STYLE_ENDPOINT', false),
+                //'visibility' => 'public',
+                //'root' => 'novel-coverimage',
+                'throw' => true
+            ],
+            
+            'chapters' => [
+                'driver' => 's3',
+                'key' => env('SUPABASE_ACCESS_KEY_ID'),
+                'secret' => env('SUPABASE_SECRET_ACCESS_KEY'),
+                'region' => env('SUPABASE_REGION'),
+                'bucket' => env('SUPABASE_BUCKET'),
+                'endpoint' => env('SUPABASE_ENDPOINT', 'http://127.0.0.1:9001'),
+                'url' => env('SUPABASE_ENDPOINT'),
+                'use_path_style_endpoint' => env('SUPABASE_USE_PATH_STYLE_ENDPOINT', false),
+                'visibility' => 'public',
+                'root' => 'chapters'
+            ],
+        ]
     ],
 
     /*

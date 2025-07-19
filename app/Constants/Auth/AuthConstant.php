@@ -4,6 +4,6 @@ namespace App\Constants\Auth;
 
 class AuthConstant {
 
-   public const ROLE_ADMIN = 'admin';
+   public const ROLE_ADMIN = 1;
 
 }

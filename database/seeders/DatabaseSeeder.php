@@ -9,6 +9,10 @@ use App\Models\Chapter;
 use App\Models\Novel;
 use App\Models\Volume;
 use App\Models\Category;
+use App\Models\CoinHistory;
+use App\Models\Role;
+use App\Models\NovelView;
+use Faker\Factory as Faker;
 
 class DatabaseSeeder extends Seeder
 {
@@ -17,28 +21,65 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
+        // Initialize Faker
+        $faker = Faker::create();
+
+        // Seed roles
+        $adminRole = Role::firstOrCreate(['name' => 'admin']);
+        $translatorRole = Role::firstOrCreate(['name' => 'translator']);
+
+        // Seed admin user
         User::factory()->create([
             'name' => 'Admin User',
             'email' => 'admin@example.com',
-            'role' => 'admin',
+            'role_id' => $adminRole->id,
         ]);
 
-        User::factory(10)->create(); // authors
+        // Seed translators
+        User::factory(100)->create(['role_id' => $translatorRole->id]);
 
-        Category::factory()->count(5)->create();
+        // Seed categories
+        Category::factory(10)->create();
 
-        Novel::factory(10)->create()->each(function ($novel) {
+        // Seed novels, volumes, chapters, and attach categories
+        Novel::factory(100)->create()->each(function ($novel) use ($faker) {
             
+            // Attach 2 random categories
             $novel->categories()->sync(
                 Category::inRandomOrder()->take(2)->pluck('id')->toArray()
             );
 
-            Volume::factory(3)->create(['novel_id' => $novel->id])->each(function ($volume) use ($novel) {
-                Chapter::factory(5)->create([
-                    'volume_id' => $volume->id,
-                    //'novel_id' => $novel->id,
+            NovelView::factory()->create([
+                'user_id' => User::inRandomOrder()->first()->id, // Random user
+                'novel_id' => $novel->id,
+                'ip_address' => $faker->ipv4,
+                'created_at' => $faker->dateTimeBetween('-60 days', 'now'), // Random date within the last week
+            ]);
+
+            // Create volumes for each novel
+            for ($v = 1; $v <= 15; $v++) {
+
+                $volume = Volume::factory()->create([
+                    'novel_id' => $novel->id,
+                    'volume_number' => $v,
+                    'volume_title' => $faker->sentence(3),
                 ]);
-            });
+
+                // Create 5 chapters with unique chapter_number per volume
+                for ($c = 1; $c <= 15; $c++) {
+                    Chapter::factory()->create([
+                        'volume_id' => $volume->id,
+                        'chapter_number' => $c,
+                        'title' => $faker->sentence(4),
+                        'file_path' => $faker->word . '.txt',
+                        'coin_cost' => $faker->numberBetween(0, 10),
+                        'status' => $faker->randomElement(['pending', 'processed', 'approved']),
+                    ]);
+                }
+            }
         });
-    }
+
+        // Seed coin histories
+        CoinHistory::factory(200)->create();
+    }   
 }

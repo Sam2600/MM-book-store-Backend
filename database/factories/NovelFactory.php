@@ -18,13 +18,14 @@ class NovelFactory extends Factory
     public function definition(): array
     {
         return [
-            'translator_id' => User::inRandomOrder()->first()->id,
+            'translator_id' => User::inRandomOrder()->first()?->id ?? 1,
             'original_author_name' => $this->faker->name,
-            'original_book_name' => $this->faker->jobTitle(),
+            'original_book_name' => $this->faker->sentence(3),
             'title' => $this->faker->sentence(3),
             'description' => $this->faker->paragraph,
-            'view_count' => $this->faker->numberBetween(1000, 9000),
-            'cover_image' => $this->faker->imageUrl,
+            'cover_image' => $this->faker->imageUrl(),
+            'view_count' => $this->faker->numberBetween(0, 10000),
+            'status' => $this->faker->randomElement(['ongoing', 'completed']),
         ];
     }
 }

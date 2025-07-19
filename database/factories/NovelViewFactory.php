@@ -3,24 +3,26 @@
 namespace Database\Factories;
 
 use Illuminate\Database\Eloquent\Factories\Factory;
+use App\Models\Volume;
 use App\Models\Novel;
+use App\Models\User;
 
 /**
  * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Model>
  */
-class VolumeFactory extends Factory
+class NovelViewFactory extends Factory
 {
-    /**
+   /**
      * Define the model's default state.
      *
      * @return array<string, mixed>
      */
-    public function definition(): array
-    {
-        return [
+   public function definition(): array
+   {
+      return [
+            'user_id' => User::inRandomOrder()->first()?->id ?? 1,
             'novel_id' => Novel::inRandomOrder()->first()?->id ?? 1,
-            'volume_number' => $this->faker->numberBetween(1, 10),
-            'volume_title' => $this->faker->sentence(3),
-        ];
-    }
+            'ip_address' => $this->faker->ipv4,
+      ];
+   }
 }

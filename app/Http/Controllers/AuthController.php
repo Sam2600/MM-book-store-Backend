@@ -25,7 +25,7 @@ class AuthController extends Controller
                 "name" => $request->name,
                 "email" => $request->email,
                 "password" => Hash::make($request->password),
-                "role" => $request->role ?? AuthConstant::ROLE_ADMIN
+                "role_id" => $request->role_id ?? AuthConstant::ROLE_ADMIN
             ];
     
             User::create($userData);

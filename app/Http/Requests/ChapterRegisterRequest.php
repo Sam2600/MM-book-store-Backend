@@ -31,10 +31,10 @@ class ChapterRegisterRequest extends FormRequest
     {
         return [
             'novel_id' => 'required|exists:novels,id',
-            'volume_id' => 'required|integer',
-            'chapter_id' => 'required|integer',
+            'volume_number' => 'required|integer',
+            'chapter_number' => 'required|integer',
             'title' => 'required|string',
-            'volume_title' => 'required|string',
+            'volume_title' => 'nullable|string',
             'content' => 'required|string',
         ];
     }

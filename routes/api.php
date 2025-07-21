@@ -25,14 +25,15 @@ Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 
 Route::middleware('auth:sanctum')->group(function () {
-    Route::post('/logout', [AuthController::class, 'logout']);
+    Route::get('/logout', [AuthController::class, 'logout']);
     Route::get('/profile', [AuthController::class, 'profile']);
 
     Route::post('/novels', [NovelController::class, 'store']);
     Route::post('/novels/{novel}/volumes', [VolumeController::class, 'store']);
     Route::post('/chapters', [ChapterController::class, 'store']);
     Route::post('/novels/{novel}/categories', [CategoryController::class, 'assignCategories']);
-
+    Route::post('/bookmarks', [NovelController::class, 'bookmarkNovel']);
+    Route::patch('/novels/bookmarks/{id}', [NovelController::class, 'removeBookmarkNovel']);
     Route::get('/novelsByAuthors', [NovelController::class, 'getNovelsByAuthor']);
 });
 

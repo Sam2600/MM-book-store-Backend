@@ -6,19 +6,17 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class Payout extends Model
+class Role extends Model
 {
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
-        'translator_id', 
-        'total_coins', 
-        'amount', 
-        'status'
+        'name', 
+        'description'
     ];
 
-    public function author()
+    public function users()
     {
-        return $this->belongsTo(User::class, 'translator_id');
+        return $this->hasMany(User::class);
     }
 }

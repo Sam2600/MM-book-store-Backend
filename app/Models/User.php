@@ -7,10 +7,11 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class User extends Authenticatable
 {
-    use HasApiTokens, HasFactory, Notifiable;
+    use HasApiTokens, HasFactory, Notifiable, SoftDeletes;
 
     /**
      * The attributes that are mass assignable.
@@ -20,6 +21,7 @@ class User extends Authenticatable
     protected $fillable = [
         'name',
         'email',
+        'role_id',
         'password',
     ];
 
@@ -43,19 +45,9 @@ class User extends Authenticatable
         'password' => 'hashed',
     ];
 
-    public function coins()
+    public function views()
     {
-        return $this->hasMany(Coin::class);
-    }
-
-    public function chapterPurchases()
-    {
-        return $this->hasMany(ChapterPurchase::class);
-    }
-
-    public function adViews()
-    {
-        return $this->hasMany(AdView::class);
+        return $this->hasMany(NovelView::class);
     }
 
     public function novels()
@@ -66,5 +58,29 @@ class User extends Authenticatable
     public function authorEarnings()
     {
         return $this->hasMany(AuthorEarning::class, 'translator_id');
+    }
+
+    public function payouts()
+    {
+        return $this->hasMany(Payout::class, 'translator_id');
+    }
+
+    public function coinHistories()
+    {
+        return $this->hasMany(CoinHistory::class, 'user_id');
+    }
+
+    public function role()
+    {
+        return $this->belongsTo(Role::class);
+    }
+
+    public function ratings()
+    {
+        return $this->hasMany(Rating::class, 'user_id');
+    }
+    public function bookmarks()
+    {
+        return $this->hasMany(Bookmark::class, 'user_id');
     }
 }

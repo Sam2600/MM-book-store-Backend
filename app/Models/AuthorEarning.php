@@ -4,12 +4,18 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class AuthorEarning extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
-    protected $fillable = ['translator_id', 'chapter_id', 'coins_earned', 'earned_at'];
+    protected $fillable = [
+        'translator_id', 
+        'chapter_id', 
+        'coins_earned', 
+        'earned_at'
+    ];
 
     public function author()
     {

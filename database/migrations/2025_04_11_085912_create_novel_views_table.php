@@ -13,13 +13,11 @@ return new class extends Migration
     {
         Schema::create('novel_views', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('novel_id');
-            $table->unsignedBigInteger('user_id')->nullable();
+            $table->foreignId('novel_id')->constrained('novels');
+            $table->foreignId('user_id')->nullable();
             $table->ipAddress('ip_address')->nullable();
+            $table->softDeletes();
             $table->timestamps();
-
-            $table->foreign('novel_id')->references('id')->on('novels')->onDelete('cascade');
-            $table->index(['novel_id', 'created_at']);
         });
     }
 

@@ -13,10 +13,11 @@ return new class extends Migration
     {
         Schema::create('author_earnings', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('translator_id')->constrained('users')->onDelete('cascade');
-            $table->foreignId('chapter_id')->constrained()->onDelete('cascade');
+            $table->foreignId('translator_id')->constrained('users');
+            $table->foreignId('chapter_id')->constrained('chapters');
             $table->unsignedInteger('coins_earned');
             $table->timestamp('earned_at');
+            $table->softDeletes();
             $table->timestamps();
         });
     }

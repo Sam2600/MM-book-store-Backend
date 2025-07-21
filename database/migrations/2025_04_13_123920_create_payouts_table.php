@@ -13,10 +13,11 @@ return new class extends Migration
     {
         Schema::create('payouts', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('translator_id')->constrained('users')->onDelete('cascade');
+            $table->foreignId('translator_id')->constrained('users');
             $table->unsignedInteger('total_coins');
-            $table->decimal('amount', 8, 2); // money value
+            $table->decimal('amount', 8, 2);
             $table->enum('status', ['pending', 'paid']);
+            $table->softDeletes();
             $table->timestamps();
         });
     }

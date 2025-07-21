@@ -21,6 +21,7 @@ return new class extends Migration
             $table->string('cover_image')->nullable();
             $table->unsignedBigInteger('view_count')->default(0);
             $table->enum('status', ['ongoing', 'completed'])->default('ongoing');
+            $table->softDeletes();
             $table->timestamps();
         });
         
@@ -31,6 +32,9 @@ return new class extends Migration
      */
     public function down(): void
     {
+        // This prevents from foreign key constraints deletions
+        DB::statement('SET FOREIGN_KEY_CHECKS = 0');
         Schema::dropIfExists('novels');
+        DB::statement('SET FOREIGN_KEY_CHECKS = 1');
     }
 };

@@ -14,9 +14,9 @@ return new class extends Migration
         Schema::create('volumes', function (Blueprint $table) { 
             $table->id();
             $table->integer('volume_number'); // use this to represent "Volume 1", "Volume 2", etc.
-            $table->foreignId('novel_id')->constrained()->onDelete('cascade'); 
-            $table->string('volume_title'); // e.g., "Volume 1" 
-            $table->integer('order')->default(1); // for sorting 
+            $table->foreignId('novel_id')->constrained()->onDelete('cascade'); // Foreign key to the novels table
+            $table->string('volume_title')->nullable(); // e.g., "Volume 1" 
+            $table->softDeletes();
             $table->timestamps(); 
         });
     }

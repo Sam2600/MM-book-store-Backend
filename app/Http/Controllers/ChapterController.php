@@ -13,6 +13,10 @@ use App\Http\Requests\ChapterRegisterRequest;
 use App\Interfaces\Novel\NovelRepositoryInterface;
 use App\Interfaces\Volume\VolumeRepositoryInterface;
 use App\Interfaces\Chapter\ChapterRepositoryInterface;
+use Illuminate\Support\Str;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Smalot\PdfParser\Parser;
+use Illuminate\Support\HtmlString;
 
 class ChapterController extends Controller
 {
@@ -28,11 +32,13 @@ class ChapterController extends Controller
     {
         /** @var \Illuminate\Http\Request $request */
 
+        $relativePath = "";
+
         try {
 
             DB::beginTransaction();
 
-            $volume = $this->volumeI->checkVolumeByIds($request->novel_id, $request->volume_id);
+            $volume = $this->volumeI->checkVolumeByIds($request->novel_id, $request->volume_number);
 
             if (is_null($volume)) {
 
@@ -42,17 +48,35 @@ class ChapterController extends Controller
                 $vol = [
                     "order" => $volumeCount + 1,
                     "novel_id" => $request->novel_id,
-                    "volume_number" => $request->volume_id,
-                    "volume_title" => $request->volume_title ?? "Volume " . ($volumeCount + 1),
+                    "volume_number" => $request->volume_number,
+                    "volume_title" => $request->volume_title ?? "",
                 ];
 
                 $volume = Volume::create($vol);
             }
 
+            $path = "/novels/{$request->novel_name}";
+
+            $this->checkAndCreateDirectory($this->getDefaultDisk(), $path);
+
+            $uniqueFileName = $this->generateChapterFileName($request->chapter_number, $request->title, "pdf");
+
+            $content = $request->content;
+
+            $relativePath = "{$path}/{$uniqueFileName}";
+
+            $fullStoragePath = public_path("storage/{$relativePath}");
+
+            Pdf::loadView("pdf.chapter", compact("content"))->save($fullStoragePath);
+
             $chpt = [
+                "volume_id" => $volume->id,
+                "chapter_number" => $request->chapter_number,
                 "title" => $request->title,
                 "content" => $request->content,
-                "volume_id" => $volume->volume_number,
+                "coin_cost" => $request->coin_cost ?? 1,
+                "status" => $request->status ?? "approved",
+                "file_path" => $relativePath
             ];
 
             $chapter = Chapter::create($chpt);
@@ -66,6 +90,9 @@ class ChapterController extends Controller
         } catch (\Throwable $th) {
 
             DB::rollBack();
+
+            // If a file was successfully uploaded before the error, delete it.
+            $this->deleteFile($this->getDefaultDisk(), $relativePath);
             
             $this->logException($th);
 
@@ -82,9 +109,8 @@ class ChapterController extends Controller
 
             // Find the chapter belonging to this novel
             $volume = $this->volumeI->checkVolumeByIds($novelId, $volumeId);
-
             // Find the chapter belonging to this novel
-            $chapter = $this->chapterI->getChatperByIds($volume->volume_number, $chapterId);
+            $chapter = $this->chapterI->getChatperByIds($volume->id, $chapterId);
 
             $data = compact("novel", "chapter");
 
@@ -98,5 +124,10 @@ class ChapterController extends Controller
 
             return $this->error(__("messages.SE010"), []);
         }
+    }
+
+    private function generateChapterFileName(int|string $id, string $title, string $extension): string
+    {
+        return "chapter-{$id}_({$title})_" . now()->format("Ymd_His") . "_" . Str::random(8) . ".{$extension}";
     }
 }

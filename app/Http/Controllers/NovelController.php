@@ -4,15 +4,18 @@ namespace App\Http\Controllers;
 
 use App\Models\Novel;
 use App\Helpers\Helper;
+use App\Models\Bookmark;
 use App\Models\NovelView;
 use App\Helpers\ApiResponse;
+use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use App\Http\Requests\NovelRegisterRequest;
-use App\Interfaces\Category\CategoryRepositoryInterface;
 use App\Interfaces\Novel\NovelRepositoryInterface;
-
+use App\Interfaces\Category\CategoryRepositoryInterface;
+use App\Interfaces\Bookmark\BookmarkRepositoryInterface;
 
 class NovelController extends Controller
 {
@@ -20,7 +23,8 @@ class NovelController extends Controller
 
     public function __construct(
         private NovelRepositoryInterface $novelI,
-        private CategoryRepositoryInterface $categoryI
+        private CategoryRepositoryInterface $categoryI,
+        private BookmarkRepositoryInterface $bookmarkI
     ){}
     
     public function index(): JsonResponse
@@ -78,11 +82,11 @@ class NovelController extends Controller
     {   
         /** @var \Illuminate\Http\Request $request */
 
+        $path = "";
+
         try {
 
             DB::beginTransaction();
-            
-            $path = "";
 
             if ($request->hasFile("cover_image")) {
                 $path = $this->storeFile($request);
@@ -100,7 +104,7 @@ class NovelController extends Controller
 
             $novel = Novel::create($novel);
 
-            $novel->categories()->attach($request->category_ids);
+            $novel->categories()->attach($request->categories);
 
             DB::commit();
 
@@ -129,9 +133,24 @@ class NovelController extends Controller
 
             $novel = $this->novelI->getNovelDetailInfoById($id);
 
+            if (empty($novel)) {
+                return $this->error(__("messages.SE004"), ["attribute" => "Novel"]);
+            }
+            
+            $disk = $this->getDisk();
+
+            /** @var Illuminate\Support\Facades\Storage $storage */
+            $storage = Storage::disk($disk);
+
+            $img_url = !empty($novel->cover_image)
+                ? $storage->url($novel->cover_image)
+                : $storage->url(config("default.image.cover"));
+
+            $novel->cover_image = $img_url;
+
             $data = [
                 "novel_id" => $novel->id,
-                "user_id" => auth()->id(),
+                "user_id" => null,
                 "ip_address" => request()->ip(),
             ];
 
@@ -158,6 +177,82 @@ class NovelController extends Controller
         $novels = $this->novelI->getNovelsByAuthor();
 
         return $this->success(__("messages.SS008"), $novels);
+    }
+
+    public function bookmarkNovel(Request $request): JsonResponse
+    {
+        try {
+
+            DB::beginTransaction();
+
+            $novel = $this->novelI->getNovelDetailInfoById($request->novel_id);
+
+            if (empty($novel)) {
+                return $this->error(__("messages.SE004"), ["attribute" => "Novel"]);
+            }
+
+            $user = Auth::user();
+            $isBookmarkExists = $this->bookmarkI->checkBookmarkExists($request->novel_id, $user->id);
+
+            if ($isBookmarkExists) {
+
+                Bookmark::where('user_id', $user->id)
+                    ->where('novel_id', $request->novel_id)
+                    ->onlyTrashed()
+                    ->restore();
+
+            } else {
+
+                $data = [
+                    "user_id" => $user->id,
+                    "novel_id" => $request->novel_id,
+                ];
+
+                Bookmark::create($data);
+            }
+
+            DB::commit();
+
+            return $this->success(__("messages.SS001", ["attribute" => "Bookmark"]), []);
+
+        } catch (\Throwable $th) {
+
+            DB::rollBack();
+
+            $this->logException($th);
+
+            return $this->error(__("messages.SE010"), []);
+        }
+    }
+
+    public function removeBookmarkNovel(int $id): JsonResponse
+    {
+        try {
+
+            DB::beginTransaction();
+
+            $user = Auth::user();
+            
+            $bookmark = Bookmark::where('user_id', $user->id)->where('novel_id', $id)->first();
+
+            if (empty($bookmark)) {
+                return $this->error(__("messages.SE004", ["attribute" => "Bookmark"]));
+            }
+
+            $bookmark->delete();
+
+            DB::commit();
+
+            return $this->success(__("messages.SS003", ["attribute" => "Bookmark"]), []);
+
+        } catch (\Throwable $th) {
+
+            DB::rollBack();
+
+            $this->logException($th);
+
+            return $this->error(__("messages.SE010"), []);
+        }
     }
 
     private function storeFile(NovelRegisterRequest $request): String

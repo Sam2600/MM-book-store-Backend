@@ -27,6 +27,7 @@ class DatabaseSeeder extends Seeder
         // Seed roles
         $adminRole = Role::firstOrCreate(['name' => 'admin']);
         $translatorRole = Role::firstOrCreate(['name' => 'translator']);
+        $userRole = Role::firstOrCreate(['name' => 'user']);
 
         // Seed admin user
         User::factory()->create([
@@ -36,10 +37,11 @@ class DatabaseSeeder extends Seeder
         ]);
 
         // Seed translators
-        User::factory(100)->create(['role_id' => $translatorRole->id]);
+        User::factory(20)->create(['role_id' => rand(2,3)]);
 
         // Seed categories
-        Category::factory(10)->create();
+        $categories = array ("Action", "Adventure", "Comedy", "Drama", "Fantasy", "Horror", "Mystery", "Romance", "Sci-Fi", "Thriller");
+        Category::factory()->createMany(array_map(fn($name) => ['name' => $name], $categories));
 
         // Seed novels, volumes, chapters, and attach categories
         Novel::factory(100)->create()->each(function ($novel) use ($faker) {
@@ -71,7 +73,7 @@ class DatabaseSeeder extends Seeder
                         'volume_id' => $volume->id,
                         'chapter_number' => $c,
                         'title' => $faker->sentence(4),
-                        'file_path' => $faker->word . '.txt',
+                        'content' => $faker->paragraphs(3, true),
                         'coin_cost' => $faker->numberBetween(0, 10),
                         'status' => $faker->randomElement(['pending', 'processed', 'approved']),
                     ]);

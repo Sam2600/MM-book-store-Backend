@@ -17,7 +17,11 @@ class CategoryFactory extends Factory
     public function definition(): array
     {
         return [
-            'name' => ucfirst($this->faker->word),
+            'name' => ucfirst(
+                $this->faker->randomElement(
+                    $array = array ("Action", "Adventure", "Comedy", "Drama", "Fantasy", "Horror", "Mystery", "Romance", "Sci-Fi", "Thriller")
+                )
+            )
         ];
     }
 }

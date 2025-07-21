@@ -22,6 +22,7 @@ class ChapterFactory extends Factory
             'chapter_number' => $this->faker->numberBetween(1, 50),
             'title' => $this->faker->sentence(4),
             'file_path' => $this->faker->word . '.txt',
+            'content' => $this->faker->paragraphs(3, true),
             'coin_cost' => $this->faker->numberBetween(0, 10),
             'status' => $this->faker->randomElement(['pending', 'processed', 'approved']),
         ];

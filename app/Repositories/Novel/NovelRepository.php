@@ -93,7 +93,10 @@ class NovelRepository implements NovelRepositoryInterface
       return Novel::with([
          'translator',
          'categories',
-         'volumes.chapters'
+         'volumes.chapters',
+         'bookmarks' => function ($query) use ($id) {
+            $query->where('novel_id', $id);
+         }
       ])
       ->find($id)
       ->makeHidden(['updated_at']);

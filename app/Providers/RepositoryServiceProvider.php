@@ -7,10 +7,12 @@ use App\Repositories\Novel\NovelRepository;
 use App\Repositories\Volume\VolumeRepository;
 use App\Repositories\Chapter\ChapterRepository;
 use App\Repositories\Category\CategoryRepository;
+use App\Repositories\Bookmark\BookmarkRepository;
 use App\Interfaces\Novel\NovelRepositoryInterface;
 use App\Interfaces\Volume\VolumeRepositoryInterface;
 use App\Interfaces\Chapter\ChapterRepositoryInterface;
 use App\Interfaces\Category\CategoryRepositoryInterface;
+use App\Interfaces\Bookmark\BookmarkRepositoryInterface;
 
 class RepositoryServiceProvider extends ServiceProvider
 {
@@ -23,6 +25,7 @@ class RepositoryServiceProvider extends ServiceProvider
         $this->app->bind(VolumeRepositoryInterface::class, VolumeRepository::class);
         $this->app->bind(ChapterRepositoryInterface::class, ChapterRepository::class);
         $this->app->bind(CategoryRepositoryInterface::class, CategoryRepository::class);
+        $this->app->bind(BookmarkRepositoryInterface::class, BookmarkRepository::class);
     }
 
     /**

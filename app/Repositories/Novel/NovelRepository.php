@@ -7,6 +7,7 @@ use App\Models\Novel;
 use App\Helpers\Helper;
 use App\Models\Category;
 use App\Models\NovelView;
+use App\Models\BookMark;
 use Illuminate\Support\Facades\Auth;
 use App\Interfaces\Novel\NovelRepositoryInterface;
 
@@ -105,5 +106,15 @@ class NovelRepository implements NovelRepositoryInterface
    public function getNovelById(int|String $id)
    {
       return Novel::find($id);
+   }
+
+   public function getBookMarks(int|string $user_id)
+   {
+      return BookMark::where('user_id', $user_id)->pluck('novel_id')->toArray();
+   }
+
+   public function getNovelByBookMarks(array $novel_ids)
+   {
+      return Novel::whereIn('id', $novel_ids)->get();
    }
 }

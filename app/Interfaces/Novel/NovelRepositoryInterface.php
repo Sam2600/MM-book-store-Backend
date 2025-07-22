@@ -19,4 +19,8 @@ interface NovelRepositoryInterface
    public function getNovelDetailInfoById(int $id);
 
    public function getNovelById(int|String $id);
+
+   public function getBookMarks(int|string $user_id);
+
+   public function getNovelByBookMarks(array $novel_ids);
 }

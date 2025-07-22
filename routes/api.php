@@ -35,6 +35,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/bookmarks', [NovelController::class, 'bookmarkNovel']);
     Route::patch('/novels/bookmarks/{id}', [NovelController::class, 'removeBookmarkNovel']);
     Route::get('/novelsByAuthors', [NovelController::class, 'getNovelsByAuthor']);
+    Route::get('/getBookMarkedCollection', [NovelController::class, 'getBookMarkedCollection']);
 });
 
 Route::get('/novels', [NovelController::class, 'index']);

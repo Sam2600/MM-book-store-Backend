@@ -255,6 +255,50 @@ class NovelController extends Controller
         }
     }
 
+    public function getBookMarkedCollection()
+    {
+        try {
+
+            DB::beginTransaction();
+
+            $user = Auth::user();
+
+            $novel_ids = $this->novelI->getBookMarks($user->id);
+
+            if(count($novel_ids) == 0) {
+                return $this->notFound(__("messages.SE004", ["attribute" => "Bookmarks"]));
+            }
+
+            $novels = $this->novelI->getNovelByBookMarks($novel_ids);
+
+            $disk = $this->getDisk();
+
+            /** @var Illuminate\Support\Facades\Storage $storage */
+            $storage = Storage::disk($disk);
+
+            $mapCoverImage = function(Novel $novel) use ($storage) {
+                
+                $novel->cover_image = !empty($novel->cover_image)
+                    ? $storage->url($novel->cover_image)
+                    : $storage->url(config("default.image.cover"));
+    
+                return $novel;
+            };
+
+            $novels = $novels->map($mapCoverImage);
+
+            return $this->success(__("messages.SS008"), $novels);
+
+        } catch (\Throwable $th) {
+
+            DB::rollBack();
+
+            $this->logException($th);
+
+            return $this->error(__("messages.SE010"), []);
+        }
+    }
+
     private function storeFile(NovelRegisterRequest $request): String
     {   
          /** @var \Illuminate\Http\Request $request */

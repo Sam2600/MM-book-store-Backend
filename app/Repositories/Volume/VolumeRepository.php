@@ -9,7 +9,8 @@ class VolumeRepository implements VolumeRepositoryInterface
 {
    public function checkVolumeByIds(int|String $novelId, int|String $volumeId)
    {
-      return Volume::where("id", $volumeId)
+      return Volume::select('id')
+               ->where("volume_number", $volumeId)
                ->where("novel_id", $novelId)
                ->first();
    }

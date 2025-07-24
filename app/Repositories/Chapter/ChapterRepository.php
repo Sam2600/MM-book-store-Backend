@@ -10,7 +10,7 @@ class ChapterRepository implements ChapterRepositoryInterface
    public function getChatperByIds(int|String $volumeId, int|String $chapterId)
    {
       return Chapter::where("volume_id", $volumeId)
-         ->where("id", $chapterId)
+         ->where("chapter_number", $chapterId)
          ->first();
    }
 }

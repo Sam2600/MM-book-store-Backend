@@ -40,7 +40,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
 Route::get('/novels', [NovelController::class, 'index']);
 Route::get('/novels/{id}', [NovelController::class, 'show']);
-Route::get('/novels/{novelId}/volumes/{volumeId}/chapters/{chapterId}', [ChapterController::class, 'show']);
+Route::get('/novels/{novelId}/chapters/{chapterId}', [ChapterController::class, 'show']);
 Route::get('/categories', [CategoryController::class, 'index']);
 
 Route::get('chapter-image', function(){

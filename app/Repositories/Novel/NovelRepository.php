@@ -105,7 +105,7 @@ class NovelRepository implements NovelRepositoryInterface
 
    public function getNovelById(int|String $id)
    {
-      return Novel::find($id);
+      return Novel::select('id')->where('id', $id)->first();
    }
 
    public function getBookMarks(int|string $user_id)

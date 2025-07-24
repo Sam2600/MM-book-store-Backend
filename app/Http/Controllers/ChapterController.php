@@ -100,21 +100,37 @@ class ChapterController extends Controller
         }
     }
 
-    public function show(int|String $novelId, int|String $volumeId, int|String $chapterId): JsonResponse
+    public function show(int|String $novelId, int|String $chapterId): JsonResponse
     {
         
         try {
             // Check if the novel exists
             $novel = $this->novelI->getNovelById($novelId);
 
-            // Find the chapter belonging to this novel
-            $volume = $this->volumeI->checkVolumeByIds($novelId, $volumeId);
-            // Find the chapter belonging to this novel
-            $chapter = $this->chapterI->getChatperByIds($volume->id, $chapterId);
+            if (is_null($novel)) {
+                return $this->error(__("messages.SE004", ["attribute" => "Novel"]));
+            }
 
-            $data = compact("novel", "chapter");
+            $chapter = $novel->chapters->where('chapter_number', $chapterId)->first();
 
-            return $this->success( __("messages.SS008"), $data);
+            if (is_null($chapter)) {
+                return $this->error(__("messages.SE004", ["attribute" => "Chapter"]));
+            }
+
+            $chapter_numbers = $novel->chapters->pluck('chapter_number')->toArray();
+
+            $next_chapter = null;
+            $prev_chapter = null;
+
+            if(count($chapter_numbers) > 0) {
+                $next_chapter = in_array($chapter->chapter_number + 1, $chapter_numbers) ? $chapter->chapter_number + 1 : null;
+                $prev_chapter = in_array($chapter->chapter_number - 1, $chapter_numbers) ? $chapter->chapter_number - 1 : null;
+            }
+
+            $chapter->next_chapter = $next_chapter;
+            $chapter->prev_chapter = $prev_chapter;
+
+            return $this->success( __("messages.SS008"), $chapter);
 
         } catch (\Throwable $th) {
 

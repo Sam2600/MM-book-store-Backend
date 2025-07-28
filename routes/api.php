@@ -3,6 +3,7 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
+use App\Http\Controllers\UserController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\NovelController;
 use App\Http\Controllers\VolumeController;
@@ -36,6 +37,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::patch('/novels/bookmarks/{id}', [NovelController::class, 'removeBookmarkNovel']);
     Route::get('/novelsByAuthors', [NovelController::class, 'getNovelsByAuthor']);
     Route::get('/getBookMarkedCollection', [NovelController::class, 'getBookMarkedCollection']);
+    Route::get('/getAuthorInfoAndNovels', [UserController::class, 'getAuthorInfoAndNovels']);
 });
 
 Route::get('/novels', [NovelController::class, 'index']);

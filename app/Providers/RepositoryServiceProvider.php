@@ -3,11 +3,13 @@
 namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
+use App\Repositories\User\UserRepository;
 use App\Repositories\Novel\NovelRepository;
 use App\Repositories\Volume\VolumeRepository;
 use App\Repositories\Chapter\ChapterRepository;
 use App\Repositories\Category\CategoryRepository;
 use App\Repositories\Bookmark\BookmarkRepository;
+use App\Interfaces\User\UserRepositoryInterface;
 use App\Interfaces\Novel\NovelRepositoryInterface;
 use App\Interfaces\Volume\VolumeRepositoryInterface;
 use App\Interfaces\Chapter\ChapterRepositoryInterface;
@@ -21,6 +23,7 @@ class RepositoryServiceProvider extends ServiceProvider
      */
     public function register() 
     {
+        $this->app->bind(UserRepositoryInterface::class, UserRepository::class);
         $this->app->bind(NovelRepositoryInterface::class, NovelRepository::class);
         $this->app->bind(VolumeRepositoryInterface::class, VolumeRepository::class);
         $this->app->bind(ChapterRepositoryInterface::class, ChapterRepository::class);

@@ -37,4 +37,16 @@ trait Helper
             Storage::disk($disk)->makeDirectory($path, 0777, true, true);
         }
     }
+
+    public function getImageWithDBpath(string $img_path): String
+    {
+        $default_disk = $this->getDefaultDisk();
+
+        /** @var Illuminate\Support\Facades\Storage $storage */
+        $default_storage = Storage::disk($default_disk);
+
+        return !empty($img_path)
+            ? $default_storage->url($img_path)
+            : $default_storage->url(config("default.image.cover"));
+    }
 }

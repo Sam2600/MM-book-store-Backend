@@ -23,8 +23,8 @@ class NovelRepository implements NovelRepositoryInterface
    public function getPopularThisWeekNovels()
    {
       // Get week start and end dates
-      $weekStart = Carbon::now()->startOfWeek();
-      $weekEnd = Carbon::now()->endOfWeek();
+      $weekStart = Carbon::now()->subDays(7)->toDateString();
+      $weekEnd = Carbon::now()->toDateString();
 
       $ids = NovelView::whereBetween('created_at', [$weekStart, $weekEnd])
          ->where('deleted_at', null)
@@ -53,8 +53,8 @@ class NovelRepository implements NovelRepositoryInterface
    public function getPopularThisMonthNovels()
    {
       // Get month start and end dates
-      $monthStart = Carbon::now()->startOfMonth();
-      $monthEnd = Carbon::now()->endOfMonth();
+      $monthStart = Carbon::now()->subDays(7)->toDateString();
+      $monthEnd = Carbon::now()->toDateString();
 
       $ids = NovelView::whereBetween('created_at', [$monthStart, $monthEnd])
          ->where('deleted_at', null)

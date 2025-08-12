@@ -67,4 +67,9 @@ class Novel extends Model
     {
         return $this->hasMany(Rating::class, 'novel_id');
     }
+
+    public function tags()
+    {
+        return $this->belongsToMany(Tag::class);
+    }
 }

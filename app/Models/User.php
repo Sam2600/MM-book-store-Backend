@@ -60,9 +60,9 @@ class User extends Authenticatable
         return $this->hasMany(AuthorEarning::class, 'translator_id');
     }
 
-    public function payouts()
+    public function paymentHistories()
     {
-        return $this->hasMany(Payout::class, 'translator_id');
+        return $this->hasMany(PaymentHistory::class, 'translator_id');
     }
 
     public function coinHistories()

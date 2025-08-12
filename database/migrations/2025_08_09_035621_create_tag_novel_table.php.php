@@ -11,12 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('payouts', function (Blueprint $table) {
+        Schema::create('tag_novel', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('translator_id')->constrained('users');
-            $table->unsignedInteger('total_coins');
-            $table->decimal('amount', 8, 2);
-            $table->enum('status', ['pending', 'paid']);
+            $table->foreignId('novel_id')->constrained()->onDelete('cascade');
+            $table->foreignId('tag_id')->constrained()->onDelete('cascade');
             $table->softDeletes();
             $table->timestamps();
         });
@@ -27,6 +25,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('payouts');
+        Schema::dropIfExists('tag_novel');
     }
 };

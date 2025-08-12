@@ -20,7 +20,6 @@ return new class extends Migration
             $table->enum('status', ['spent', 'earned'])->default('earned');
             $table->unsignedInteger('coin_amount')->nullable();
             $table->string('description')->nullable();
-            $table->timestamp('purchased_at');
             $table->softDeletes();
             $table->timestamps();
         });

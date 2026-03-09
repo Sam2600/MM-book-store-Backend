@@ -1,0 +1,3 @@
+1. Login Feature with G mail
+2. Rating feature to disable and allow only rate once (or) upsert in mysql
+3. To handle volume and chapters data integrity

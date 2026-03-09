@@ -13,6 +13,7 @@ return [
     "SS007" => "This user is authenticate.",
     "SS008" => "Data get successfully.",
     "SS009" => ":attribute assigned successfully.",
+    "SS010" => ":attribute purchased successfully.",
 
     //for error
     "SE001" => "Fail to Save Data!",
@@ -32,6 +33,9 @@ return [
     "SE015" => "Failed to store files!",
     "SE016" => ":attribute does not exist!",
     "SE017" => "This :attribute1 is already used in some :attribute2!",
+    "SE018" => "This :attribute1 is not free to access!",
+    "SE019" => "Already unlocked!",
+    "SE020" => "Insufficient coins",
 
     //for attribute
     "Data" => "Data",

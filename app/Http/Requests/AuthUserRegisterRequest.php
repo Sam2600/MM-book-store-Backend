@@ -3,6 +3,8 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Contracts\Validation\Validator;
+use Illuminate\Http\Exceptions\HttpResponseException;
 
 /**
  * @property string $name
@@ -27,9 +29,21 @@ class AuthUserRegisterRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users',
+            'name' => 'required|string|unique:users|max:255',
+            'email' => 'required|string|email:rfc,dns|max:255|unique:users',
             'password' => 'required|string|min:5',
         ];
+    }
+
+    /**
+     * Return when validation failed
+     *
+     * @author  Kaung Htet San
+     * @create  20/08/2025
+     * @return  response array
+     */
+    protected function failedValidation(Validator $validator)
+    {
+        throw new HttpResponseException(response()->json(['status' => 'NG', 'message' => $validator->errors()], "422"));
     }
 }

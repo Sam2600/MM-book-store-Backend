@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Novel;
+use App\Models\Rating;
 use App\Helpers\Helper;
 use App\Models\Bookmark;
 use App\Models\NovelView;
@@ -14,6 +15,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use App\Http\Requests\NovelRegisterRequest;
 use App\Interfaces\Novel\NovelRepositoryInterface;
+use App\Interfaces\Rating\RatingRepositoryInterface;
 use App\Interfaces\Category\CategoryRepositoryInterface;
 use App\Interfaces\Bookmark\BookmarkRepositoryInterface;
 
@@ -24,7 +26,8 @@ class NovelController extends Controller
     public function __construct(
         private NovelRepositoryInterface $novelI,
         private CategoryRepositoryInterface $categoryI,
-        private BookmarkRepositoryInterface $bookmarkI
+        private BookmarkRepositoryInterface $bookmarkI,
+        private RatingRepositoryInterface $ratingI,
     ){}
     
     public function index(): JsonResponse
@@ -49,7 +52,7 @@ class NovelController extends Controller
                     ? $storage->url($novel->cover_image)
                     : $storage->url(config("default.image.cover"));
     
-                return $novel;  
+                return $novel;
             };
 
             $latest_novel = $latest_novel->map($mapCoverImage);
@@ -129,9 +132,11 @@ class NovelController extends Controller
     {
         try {
 
+            $user_id = request()->query("user_id");
+            
             DB::beginTransaction();
 
-            $novel = $this->novelI->getNovelDetailInfoById($id);
+            $novel = $this->novelI->getNovelDetailInfoById($id, $user_id);
 
             if (empty($novel)) {
                 return $this->error(__("messages.SE004"), ["attribute" => "Novel"]);
@@ -185,13 +190,14 @@ class NovelController extends Controller
 
             DB::beginTransaction();
 
-            $novel = $this->novelI->getNovelDetailInfoById($request->novel_id);
+            $user = Auth::user();
+
+            $novel = $this->novelI->getNovelDetailInfoById($request->novel_id, $user->id);
 
             if (empty($novel)) {
                 return $this->error(__("messages.SE004"), ["attribute" => "Novel"]);
             }
 
-            $user = Auth::user();
             $isBookmarkExists = $this->bookmarkI->checkBookmarkExists($request->novel_id, $user->id);
 
             if ($isBookmarkExists) {
@@ -255,7 +261,7 @@ class NovelController extends Controller
         }
     }
 
-    public function getBookMarkedCollection()
+    public function getBookMarkedCollection(): JsonResponse
     {
         try {
 
@@ -276,7 +282,7 @@ class NovelController extends Controller
             /** @var Illuminate\Support\Facades\Storage $storage */
             $storage = Storage::disk($disk);
 
-            $mapCoverImage = function(Novel $novel) use ($storage) {
+            $mapCoverImage = function(Novel $novel) use ($storage): Novel {
                 
                 $novel->cover_image = !empty($novel->cover_image)
                     ? $storage->url($novel->cover_image)
@@ -288,6 +294,98 @@ class NovelController extends Controller
             $novels = $novels->map($mapCoverImage);
 
             return $this->success(__("messages.SS008"), $novels);
+
+        } catch (\Throwable $th) {
+
+            DB::rollBack();
+
+            $this->logException($th);
+
+            return $this->error(__("messages.SE010"), []);
+        }
+    }
+
+    public function rateNovel(Request $request, int|string $id): JsonResponse
+    {
+        try {
+
+            DB::beginTransaction();
+
+            $user = Auth::user();
+
+            $novel = $this->novelI->getNovelDetailInfoById($id, $user->id);
+
+            if (empty($novel)) {
+                return $this->error(__("messages.SE004"), ["attribute" => "Novel"]);
+            }
+
+            $isRatingExists = $this->ratingI->checkRatingExists($id, $user->id);
+
+            if ($isRatingExists) {
+
+                Rating::where('user_id', $user->id)
+                    ->where('novel_id', $id)
+                    ->update(["rating" => $request->rating]);
+
+            } else {
+
+                $data = [
+                    "user_id" => $user->id,
+                    "novel_id" => $id,
+                    "rating" => $request->rating
+                ];
+
+                Rating::create($data);
+            }
+
+            DB::commit();
+
+            return $this->success(__("messages.SS001", ["attribute" => "Rating"]), []);
+
+
+        } catch (\Throwable $th) {
+
+            DB::rollBack();
+
+            $this->logException($th);
+
+            return $this->error(__("messages.SE010"), []);
+        }
+    }
+
+    public function getNovelsByCategory($id) {
+
+        try {
+
+            $novels = Novel::with(['categories' => function ($query) use ($id) {
+                $query->where('categories.id', $id)
+                    ->select('categories.id', 'categories.name');
+                }])
+                ->select(['novels.id', 'novels.title', 'novels.status', 'novels.cover_image'])
+                ->whereHas('categories', function ($query) use ($id) {
+                    $query->where('categories.id', $id);
+                })
+                ->get();
+            
+            $disk = $this->getDisk();
+
+            /** @var Illuminate\Support\Facades\Storage $storage */
+            $storage = Storage::disk($disk);
+
+            $mapCoverImage = function(Novel $novel) use ($storage) {
+                
+                $novel->cover_image = !empty($novel->cover_image)
+                    ? $storage->url($novel->cover_image)
+                    : $storage->url(config("default.image.cover"));
+    
+                return $novel;
+            };
+            
+            $data = $novels->map($mapCoverImage);
+
+            return $this->success(
+                __("messages.SS008"), $data
+            );
 
         } catch (\Throwable $th) {
 

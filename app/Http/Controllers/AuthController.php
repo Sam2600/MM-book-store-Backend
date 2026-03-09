@@ -7,11 +7,14 @@ use App\Helpers\Helper;
 use App\Helpers\ApiResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\DB;
 use App\Constants\Auth\AuthConstant;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use App\Http\Requests\AuthUserLoginRequest;
 use App\Http\Requests\AuthUserRegisterRequest;
+use App\Mail\UserRegisterMail;
+use Illuminate\Support\Facades\Mail;
 
 class AuthController extends Controller
 {
@@ -21,20 +24,37 @@ class AuthController extends Controller
     {   
         try {
 
+            DB::beginTransaction();
+            
             $userData = [
                 "name" => $request->name,
                 "email" => $request->email,
                 "password" => Hash::make($request->password),
-                "role_id" => $request->role_id ?? AuthConstant::ROLE_ADMIN
+                "role_id" => $request->role_id ?? AuthConstant::ROLE_NORMAL_USER
             ];
     
-            User::create($userData);
-    
+            $user = User::create($userData);
+
+            $mailData = [
+                'user_id' => $user->id,
+                'user_name' => $user->name,
+            ];
+
+            # If the user is saved, then send an activation message to user's email
+            if (!Mail::to($request->email)->send(new UserRegisterMail($mailData))) {
+                $errorMsg = __("messages.SE012", ["attribute" => __('Mail')]);
+                return $this->error($errorMsg, []);
+            };
+            
+            DB::commit();
+
             return $this->success(
                 __("messages.SS001", ["attribute" => "User"])
             );
         
         } catch(\Throwable $th) {
+
+            DB::rollBack();
 
             $this->logException($th);
 
@@ -53,7 +73,7 @@ class AuthController extends Controller
             $credentials = $request->only("email", "password");
 
             /** @var \App\Models\User $user */
-            $user = User::where("email", $request->email)->first();
+            $user = User::where("email", $request->email)->where("email_verified_at", "<>", null)->first();
 
             if (!$user) {
                 return $this->badRequest(__("messages.SE004", ["attribute" => "Login User"]));

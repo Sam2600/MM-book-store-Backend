@@ -26,8 +26,9 @@ class DatabaseSeeder extends Seeder
 
         // Seed roles
         $adminRole = Role::firstOrCreate(['name' => 'admin']);
-        $translatorRole = Role::firstOrCreate(['name' => 'translator']);
-        $userRole = Role::firstOrCreate(['name' => 'user']);
+        $systemUser = Role::firstOrCreate(['name' => 'system_user']);
+        $author = Role::firstOrCreate(['name' => 'author']);
+        $normalUser = Role::firstOrCreate(['name' => 'author']);
 
         // Seed admin user
         User::factory()->create([
@@ -37,7 +38,7 @@ class DatabaseSeeder extends Seeder
         ]);
 
         // Seed translators
-        User::factory(20)->create(['role_id' => rand(2,3)]);
+        User::factory(20)->create(['role_id' => rand(2,4)]);
 
         // Seed categories
         $categories = array ("Action", "Adventure", "Comedy", "Drama", "Fantasy", "Horror", "Mystery", "Romance", "Sci-Fi", "Thriller");

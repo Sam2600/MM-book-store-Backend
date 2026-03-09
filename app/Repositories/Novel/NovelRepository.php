@@ -10,6 +10,7 @@ use App\Models\NovelView;
 use App\Models\BookMark;
 use Illuminate\Support\Facades\Auth;
 use App\Interfaces\Novel\NovelRepositoryInterface;
+use Illuminate\Support\Facades\DB;
 
 class NovelRepository implements NovelRepositoryInterface
 {
@@ -22,27 +23,18 @@ class NovelRepository implements NovelRepositoryInterface
 
    public function getPopularThisWeekNovels()
    {
-      // Get week start and end dates
-      $weekStart = Carbon::now()->subDays(7)->toDateString();
-      $weekEnd = Carbon::now()->toDateString();
-
-      $ids = NovelView::whereBetween('created_at', [$weekStart, $weekEnd])
-         ->where('deleted_at', null)
-         ->selectRaw('count(novel_id) as view_count, novel_id')
-         ->groupBy('novel_id')
-         ->orderByDesc('view_count')
-         ->take(10)
-         ->pluck('novel_id');
-
-      $popular = Novel::with([
-         'categories:id,name'
-      ])
-      ->whereIn('id', $ids)
-      ->select('id', 'title', 'status', 'cover_image')
-      ->get()
-      ->makeHidden(['created_at', 'updated_at']);
-   
-      return $popular;
+      $weekStart = Carbon::now()->subWeek()->startOfDay();
+      
+      return Novel::query()
+         ->select(['novels.id', 'novels.title', 'novels.status', 'novels.cover_image'])
+         ->with('categories:id,name')
+         ->join('novel_views', 'novels.id', '=', 'novel_views.novel_id')
+         ->whereNull('novel_views.deleted_at') // Assuming soft deletes
+         ->where('novel_views.created_at', '>=', $weekStart)
+         ->groupBy('novels.id')
+         ->orderByRaw('COUNT(novel_views.novel_id) DESC')
+         ->limit(10)
+         ->get();
    }
 
    public function getPopularAllTimeNovels()
@@ -52,27 +44,18 @@ class NovelRepository implements NovelRepositoryInterface
 
    public function getPopularThisMonthNovels()
    {
-      // Get month start and end dates
-      $monthStart = Carbon::now()->subDays(7)->toDateString();
-      $monthEnd = Carbon::now()->toDateString();
-
-      $ids = NovelView::whereBetween('created_at', [$monthStart, $monthEnd])
-         ->where('deleted_at', null)
-         ->selectRaw('count(novel_id) as view_count, novel_id')
-         ->groupBy('novel_id')
-         ->orderByDesc('view_count')
-         ->take(10)
-         ->pluck('novel_id');
-
-      $popular = Novel::with([
-         'categories:id,name'
-      ])
-      ->whereIn('id', $ids)
-      ->select('id', 'title', 'status', 'cover_image')
-      ->get()
-      ->makeHidden(['created_at', 'updated_at']);
-
-      return $popular;
+      $monthStart = now()->startOfMonth();
+      
+      return Novel::query()
+         ->select(['novels.id', 'novels.title', 'novels.status', 'novels.cover_image'])
+         ->with('categories:id,name')
+         ->join('novel_views', 'novels.id', '=', 'novel_views.novel_id')
+         ->whereNull('novel_views.deleted_at')
+         ->whereBetween('novel_views.created_at', [$monthStart, now()])
+         ->groupBy('novels.id')
+         ->orderByRaw('COUNT(novel_views.novel_id) DESC')
+         ->limit(10)
+         ->get();
    }
 
    public function getLatestNovels()
@@ -89,23 +72,32 @@ class NovelRepository implements NovelRepositoryInterface
       return Novel::where('translator_id', $user->id)->select('id', 'title')->get();
    }
 
-   public function getNovelDetailInfoById(int $id)
+   public function getNovelDetailInfoById(int $id, int|string|null $user_id)
    {
       return Novel::with([
          'translator',
          'categories',
          'volumes.chapters',
-         'bookmarks' => function ($query) use ($id) {
+         'bookmarks' => function ($query) use ($id, $user_id) {
             $query->where('novel_id', $id);
+            $query->where('user_id', $user_id);
+         },
+      ])
+      ->withCount([
+         'ratings as user_rating_count' => function ($query) use ($id, $user_id) {
+            $query->where('novel_id', $id)
+               ->where('user_id', $user_id);
          }
       ])
+      // Add average rating column from all ratings
+      ->withAvg('ratings as average_rating', 'rating')
       ->find($id)
       ->makeHidden(['updated_at']);
    }
 
    public function getNovelById(int|String $id)
    {
-      return Novel::select('id')->where('id', $id)->first();
+      return Novel::where('id', $id)->first();
    }
 
    public function getBookMarks(int|string $user_id)
@@ -116,5 +108,14 @@ class NovelRepository implements NovelRepositoryInterface
    public function getNovelByBookMarks(array $novel_ids)
    {
       return Novel::whereIn('id', $novel_ids)->get();
+   }
+
+   public function getCurrentUserNovelChapters(int|string $novelId, int|string $userId)
+   {
+      return DB::table('user_chapters')
+         ->where('user_id', '=', $userId)
+         ->where('novel_id', '=', $novelId)
+         ->select('chapter_id')
+         ->pluck('chapter_id');
    }
 }

@@ -354,45 +354,41 @@ class NovelController extends Controller
     }
 
     public function getNovelsByCategory($id) {
-
+        
         try {
-
+            // 1. Change ->get() to ->paginate()
+            // Standard is 10 or 15 items per "page"
             $novels = Novel::with(['categories' => function ($query) use ($id) {
                 $query->where('categories.id', $id)
                     ->select('categories.id', 'categories.name');
-                }])
-                ->select(['novels.id', 'novels.title', 'novels.status', 'novels.cover_image'])
-                ->whereHas('categories', function ($query) use ($id) {
-                    $query->where('categories.id', $id);
-                })
-                ->get();
-            
-            $disk = $this->getDisk();
+            }])
+            ->select(['novels.id', 'novels.title', 'novels.status', 'novels.cover_image'])
+            ->whereHas('categories', function ($query) use ($id) {
+                $query->where('categories.id', $id);
+            })
+            ->paginate(15); // This automatically looks for the ?page= query param from React
 
-            /** @var Illuminate\Support\Facades\Storage $storage */
+            $disk = $this->getDisk();
             $storage = Storage::disk($disk);
 
-            $mapCoverImage = function(Novel $novel) use ($storage) {
-                
+            // 2. We use getCollection() to map the data while keeping the pagination metadata
+            $novels->getCollection()->transform(function(Novel $novel) use ($storage) {
                 $novel->cover_image = !empty($novel->cover_image)
                     ? $storage->url($novel->cover_image)
                     : $storage->url(config("default.image.cover"));
-    
                 return $novel;
-            };
-            
-            $data = $novels->map($mapCoverImage);
+            });
 
+            // 3. Return the whole paginated object
+            // It contains: data, current_page, last_page, total, etc.
             return $this->success(
-                __("messages.SS008"), $data
+                __("messages.SS008"), 
+                $novels
             );
 
         } catch (\Throwable $th) {
-
-            DB::rollBack();
-
+            // Note: DB::rollBack() is only needed if you are doing DB::beginTransaction()
             $this->logException($th);
-
             return $this->error(__("messages.SE010"), []);
         }
     }

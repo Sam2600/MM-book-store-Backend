@@ -111,6 +111,57 @@ class ChapterController extends Controller
         
         try {
 
+            // Check if the novel exists
+            $novel = $this->novelI->getNovelById($novelId);
+
+            if (is_null($novel)) {
+                return $this->error(__("messages.SE004", ["attribute" => "Novel"]));
+            }
+
+            $chapter = $novel->chapters()
+                ->whereHas('volume', function ($q) use ($volumeId) {
+                    $q->where('volume_number', $volumeId);
+                })
+                ->where('chapter_number', $chapterId)
+                ->first();
+
+            if (is_null($chapter)) {
+                return $this->error(__("messages.SE004", ["attribute" => "Chapter"]));
+            }
+
+            $chapter_numbers = $novel->chapters->pluck('chapter_number')->toArray();
+
+            $next_chapter = null;
+            $prev_chapter = null;
+
+            if(count($chapter_numbers) > 0) {
+                $next_chapter = in_array($chapter->chapter_number + 1, $chapter_numbers) ? $chapter->chapter_number + 1 : null;
+                $prev_chapter = in_array($chapter->chapter_number - 1, $chapter_numbers) ? $chapter->chapter_number - 1 : null;
+            }
+
+            $chapter->next_chapter = $next_chapter;
+            $chapter->prev_chapter = $prev_chapter;
+
+            return $this->success( __("messages.SS008"), $chapter);
+
+        } catch (\Throwable $th) {
+
+            DB::rollBack();
+            
+            $this->logException($th);
+
+            return $this->error(__("messages.SE010"), []);
+        }
+    }
+
+    /**
+     * TODO later this func will be used
+     */
+    public function showWithChapterAuthFeature(int|String $novelId, int|String $volumeId, int|String $chapterId): JsonResponse
+    {
+        
+        try {
+
             $user_id = request()->query("user_id", null);
 
             // Check if the novel exists
@@ -141,7 +192,7 @@ class ChapterController extends Controller
                 return $this->error(__("messages.SE004", ["attribute" => "Chapter"]));
             }
 
-            if (!$userChapterIds->contains($chapter->id)) {
+            if (count($userChapterIds) && !$userChapterIds->contains($chapter->id)) {
                 return $this->error(__("messages.SE018", ["attribute" => "Chapter"]));
             }
 

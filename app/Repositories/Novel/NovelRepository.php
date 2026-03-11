@@ -85,8 +85,8 @@ class NovelRepository implements NovelRepositoryInterface
       ])
       ->withCount([
          'ratings as user_rating_count' => function ($query) use ($id, $user_id) {
-            $query->where('novel_id', $id)
-               ->where('user_id', $user_id);
+            $query->where('novel_id', $id);
+               // ->where('user_id', $user_id);
          }
       ])
       // Add average rating column from all ratings

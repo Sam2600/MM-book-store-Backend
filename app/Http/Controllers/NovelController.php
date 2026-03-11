@@ -340,7 +340,11 @@ class NovelController extends Controller
 
             DB::commit();
 
-            return $this->success(__("messages.SS001", ["attribute" => "Rating"]), []);
+            $stats = Rating::where('novel_id', $id)
+                ->selectRaw('AVG(rating) as average, COUNT(*) as total')
+                ->first();
+
+            return $this->success(__("messages.SS001", ["attribute" => "Rating"]), $stats);
 
 
         } catch (\Throwable $th) {
@@ -354,7 +358,7 @@ class NovelController extends Controller
     }
 
     public function getNovelsByCategory($id) {
-        
+
         try {
             // 1. Change ->get() to ->paginate()
             // Standard is 10 or 15 items per "page"

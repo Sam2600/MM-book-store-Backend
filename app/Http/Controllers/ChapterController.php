@@ -110,7 +110,6 @@ class ChapterController extends Controller
     {
         
         try {
-
             // Check if the novel exists
             $novel = $this->novelI->getNovelById($novelId);
 

@@ -27,6 +27,7 @@ class NovelRepository implements NovelRepositoryInterface
       
       return Novel::query()
          ->select(['novels.id', 'novels.title', 'novels.status', 'novels.cover_image'])
+         ->selectRaw('COUNT(novel_views.id) as total_view_cnt')
          ->with('categories:id,name')
          ->join('novel_views', 'novels.id', '=', 'novel_views.novel_id')
          ->whereNull('novel_views.deleted_at') // Assuming soft deletes
@@ -48,6 +49,7 @@ class NovelRepository implements NovelRepositoryInterface
       
       return Novel::query()
          ->select(['novels.id', 'novels.title', 'novels.status', 'novels.cover_image'])
+         ->selectRaw('COUNT(novel_views.id) as total_view_cnt')
          ->with('categories:id,name')
          ->join('novel_views', 'novels.id', '=', 'novel_views.novel_id')
          ->whereNull('novel_views.deleted_at')
@@ -60,7 +62,12 @@ class NovelRepository implements NovelRepositoryInterface
 
    public function getLatestNovels()
    {
-      return Novel::select('id', 'title', 'description', 'cover_image', 'view_count', 'created_at')->orderBy('created_at', 'desc')->take(5)->get();
+      return Novel::with(['translator' => function($query) {
+            $query->select('id', 'name');
+         }])->select('id', 'translator_id', 'title', 'cover_image', 'view_count', 'created_at')
+         ->orderBy('created_at', 'desc')
+         ->take(5)
+         ->get();
    }
 
    public function getNovelsByAuthor()

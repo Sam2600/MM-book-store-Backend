@@ -360,22 +360,17 @@ class NovelController extends Controller
     public function getNovelsByCategory($id) {
 
         try {
-            // 1. Change ->get() to ->paginate()
-            // Standard is 10 or 15 items per "page"
-            $novels = Novel::with(['categories' => function ($query) use ($id) {
-                $query->where('categories.id', $id)
-                    ->select('categories.id', 'categories.name');
-            }])
-            ->select(['novels.id', 'novels.title', 'novels.status', 'novels.cover_image'])
+
+            $novels = Novel::select(['novels.id', 'novels.title', 'novels.status', 'novels.cover_image'])
+            ->withCount('views AS total_view_cnt')
             ->whereHas('categories', function ($query) use ($id) {
                 $query->where('categories.id', $id);
             })
-            ->paginate(15); // This automatically looks for the ?page= query param from React
+            ->paginate(15);
 
             $disk = $this->getDisk();
             $storage = Storage::disk($disk);
 
-            // 2. We use getCollection() to map the data while keeping the pagination metadata
             $novels->getCollection()->transform(function(Novel $novel) use ($storage) {
                 $novel->cover_image = !empty($novel->cover_image)
                     ? $storage->url($novel->cover_image)
@@ -383,15 +378,10 @@ class NovelController extends Controller
                 return $novel;
             });
 
-            // 3. Return the whole paginated object
-            // It contains: data, current_page, last_page, total, etc.
-            return $this->success(
-                __("messages.SS008"), 
-                $novels
-            );
+            return $this->success(__("messages.SS008"), $novels);
 
         } catch (\Throwable $th) {
-            // Note: DB::rollBack() is only needed if you are doing DB::beginTransaction()
+            
             $this->logException($th);
             return $this->error(__("messages.SE010"), []);
         }

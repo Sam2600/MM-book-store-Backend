@@ -27,7 +27,8 @@ class NovelRepository implements NovelRepositoryInterface
       
       return Novel::query()
          ->select(['novels.id', 'novels.title', 'novels.status', 'novels.cover_image'])
-         ->selectRaw('COUNT(novel_views.id) as total_view_cnt')
+         ->withCount('views AS total_view_cnt')
+         ->selectRaw('COUNT(novel_views.id) AS monthly_views')
          ->with('categories:id,name')
          ->join('novel_views', 'novels.id', '=', 'novel_views.novel_id')
          ->whereNull('novel_views.deleted_at') // Assuming soft deletes
@@ -49,7 +50,8 @@ class NovelRepository implements NovelRepositoryInterface
       
       return Novel::query()
          ->select(['novels.id', 'novels.title', 'novels.status', 'novels.cover_image'])
-         ->selectRaw('COUNT(novel_views.id) as total_view_cnt')
+         ->withCount('views AS total_view_cnt')
+         ->selectRaw('COUNT(novel_views.id) AS monthly_views')
          ->with('categories:id,name')
          ->join('novel_views', 'novels.id', '=', 'novel_views.novel_id')
          ->whereNull('novel_views.deleted_at')
@@ -90,13 +92,7 @@ class NovelRepository implements NovelRepositoryInterface
             $query->where('user_id', $user_id);
          },
       ])
-      ->withCount([
-         'ratings as user_rating_count' => function ($query) use ($id, $user_id) {
-            $query->where('novel_id', $id);
-               // ->where('user_id', $user_id);
-         }
-      ])
-      // Add average rating column from all ratings
+      ->withCount('ratings as user_rating_count')
       ->withAvg('ratings as average_rating', 'rating')
       ->find($id)
       ->makeHidden(['updated_at']);

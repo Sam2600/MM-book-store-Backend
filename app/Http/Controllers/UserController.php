@@ -24,17 +24,11 @@ class UserController extends Controller
     {
         try {
 
-            /**
-             * @TODO: need to change flow here, this novel query would be for authors 
-             *          not compactable with normal users
-             */
             $user = Auth::user();
 
             $novels = $this->userI->getNovelDetailsByAuthor($user->id);
 
-            $bookMarks = 
-
-            $novelList = $novels->map(function (array $novel): array {
+            $novelList = $novels->map(function ($novel) {
                 $novel['cover_image'] = $this->getImageWithDBpath($novel['cover_image'] ?? "");
                 return $novel;
             })->values();

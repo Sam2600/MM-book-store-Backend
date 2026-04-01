@@ -23,6 +23,7 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use Smalot\PdfParser\Parser;
 use Illuminate\Support\HtmlString;
 use Illuminate\Http\Request;
+use App\Models\NovelView;
 
 class ChapterController extends Controller
 {
@@ -44,6 +45,14 @@ class ChapterController extends Controller
 
             DB::beginTransaction();
 
+            // 1. VALIDATE VOLUME SEQUENCE
+            $maxVolume = Volume::where('novel_id', $request->novel_id)->max('volume_number') ?? 0;
+            
+            // If the requested volume is more than 1 step ahead of the current max
+            if ($request->volume_number > ($maxVolume + 1)) {
+                return $this->error("You cannot skip volumes. The next available volume is " . ($maxVolume + 1));
+            }
+
             $volume = $this->volumeI->checkVolumeByIds($request->novel_id, $request->volume_number);
 
             if (is_null($volume)) {
@@ -59,6 +68,25 @@ class ChapterController extends Controller
                 ];
 
                 $volume = Volume::create($vol);
+            }
+
+            // 2. VALIDATE CHAPTER SEQUENCE
+            // Check the max chapter specifically within this novel
+            $maxChapter = Chapter::whereHas('volume', function($q) use ($request) {
+                $q->where('novel_id', $request->novel_id);
+            })->max('chapter_number') ?? 0;
+
+            if ($request->chapter_number > ($maxChapter + 1)) {
+                return $this->error("You cannot skip chapters. The next available chapter is " . ($maxChapter + 1));
+            }
+
+            // 3. PREVENT DUPLICATE CHAPTERS
+            $exists = Chapter::where('volume_id', $volume->id)
+                ->where('chapter_number', $request->chapter_number)
+                ->exists();
+            
+            if ($exists) {
+                return $this->error("Chapter {$request->chapter_number} already exists in this volume.");
             }
 
             $path = "/novels/{$request->novel_name}";
@@ -108,45 +136,31 @@ class ChapterController extends Controller
 
     public function show(int|String $novelId, int|String $volumeId, int|String $chapterId): JsonResponse
     {
-        
         try {
-            // Check if the novel exists
-            $novel = $this->novelI->getNovelById($novelId);
+            DB::beginTransaction();
 
+            $novel = $this->novelI->getNovelById($novelId);
             if (is_null($novel)) {
                 return $this->error(__("messages.SE004", ["attribute" => "Novel"]));
             }
 
-            $chapter = $novel->chapters()
-                ->whereHas('volume', function ($q) use ($volumeId) {
-                    $q->where('volume_number', $volumeId);
-                })
-                ->where('chapter_number', $chapterId)
-                ->first();
-
+            $chapter = $this->findChapter($novel, $volumeId, $chapterId);
             if (is_null($chapter)) {
                 return $this->error(__("messages.SE004", ["attribute" => "Chapter"]));
             }
 
-            $chapter_numbers = $novel->chapters->pluck('chapter_number')->toArray();
+            $this->recordNovelView($novel);
+            
+            $this->attachPagination($novel, $chapter);
 
-            $next_chapter = null;
-            $prev_chapter = null;
-
-            if(count($chapter_numbers) > 0) {
-                $next_chapter = in_array($chapter->chapter_number + 1, $chapter_numbers) ? $chapter->chapter_number + 1 : null;
-                $prev_chapter = in_array($chapter->chapter_number - 1, $chapter_numbers) ? $chapter->chapter_number - 1 : null;
-            }
-
-            $chapter->next_chapter = $next_chapter;
-            $chapter->prev_chapter = $prev_chapter;
+            DB::commit();
 
             return $this->success( __("messages.SS008"), $chapter);
 
         } catch (\Throwable $th) {
 
             DB::rollBack();
-            
+
             $this->logException($th);
 
             return $this->error(__("messages.SE010"), []);
@@ -415,5 +429,63 @@ class ChapterController extends Controller
     private function generateChapterFileName(int|string $id, string $title, string $extension): string
     {
         return "chapter-{$id}_({$title})_" . now()->format("Ymd_His") . "_" . Str::random(8) . ".{$extension}";
+    }
+
+    /**
+     * Handles the logic for unique view counting with a 24-hour cooldown.
+     */
+    private function recordNovelView($novel): void
+    {
+        $ip = request()->ip();
+        $userId = request()->query("user_id");
+
+        // Check for existing view in the last 24 hours
+        $recentViewExists = NovelView::where('novel_id', $novel->id)
+            ->where(function ($query) use ($userId, $ip) {
+                if ($userId) {
+                    $query->where('user_id', $userId);
+                } else {
+                    $query->where('ip_address', $ip);
+                }
+            })
+            ->where('created_at', '>', now()->subDay())
+            ->exists();
+
+        if (!$recentViewExists) {
+            NovelView::create([
+                "novel_id"   => $novel->id,
+                "user_id"    => $userId,
+                "ip_address" => $ip,
+            ]);
+
+            $novel->increment("view_count");
+        }
+    }
+
+    /**
+     * Helper to find the specific chapter within a novel/volume.
+     */
+    private function findChapter($novel, $volumeNumber, $chapterNumber)
+    {
+        return $novel->chapters()
+            ->whereHas('volume', fn($q) => $q->where('volume_number', $volumeNumber))
+            ->where('chapter_number', $chapterNumber)
+            ->first();
+    }
+
+    /**
+     * Helper to calculate next/prev chapter numbers.
+     */
+    private function attachPagination($novel, &$chapter): void
+    {
+        $chapterNumbers = $novel->chapters->pluck('chapter_number')->toArray();
+        
+        $chapter->next_chapter = in_array($chapter->chapter_number + 1, $chapterNumbers)
+            ? $chapter->chapter_number + 1
+            : null;
+            
+        $chapter->prev_chapter = in_array($chapter->chapter_number - 1, $chapterNumbers)
+            ? $chapter->chapter_number - 1
+            : null;
     }
 }

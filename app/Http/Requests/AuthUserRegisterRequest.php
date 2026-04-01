@@ -32,6 +32,7 @@ class AuthUserRegisterRequest extends FormRequest
             'name' => 'required|string|unique:users|max:255',
             'email' => 'required|string|email:rfc,dns|max:255|unique:users',
             'password' => 'required|string|min:5',
+            'role_id' => 'nullable|integer|in:3,4',
         ];
     }
 

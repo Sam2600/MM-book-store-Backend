@@ -2,14 +2,16 @@
 
 namespace App\Http\Controllers;
 
-use Carbon\Carbon;
 use App\Helpers\Helper;
 use Illuminate\Http\Request;
 use App\Helpers\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
 use App\Interfaces\User\UserRepositoryInterface;
+use App\Mail\UserRegisterMail;
 use App\Models\User;
 
 class UserController extends Controller
@@ -84,19 +86,79 @@ class UserController extends Controller
 
     public function activate(Request $request)
     {
+        $frontendUrl = config('default.front_end_url');
+        $verifiedPage = $frontendUrl . '/email-verified';
+
         try {
 
-            $user_id = $request->query('user_id');
+            $rawToken = $request->query('token');
 
-            User::where('id', $user_id)
-                ->where('email_verified_at', NULL)
-                ->update(['email_verified_at' => Carbon::now()]);
+            if (!$rawToken) {
+                return redirect()->away($verifiedPage . '?verified=invalid');
+            }
 
-            return redirect()->away(config('default.front_end_url') . '/sign-in');
+            $hashedToken = hash('sha256', $rawToken);
+
+            $user = User::where('email_verification_token', $hashedToken)
+                ->whereNull('email_verified_at')
+                ->first();
+
+            if (!$user) {
+                return redirect()->away($verifiedPage . '?verified=invalid');
+            }
+
+            if (now()->isAfter($user->email_verification_token_expires_at)) {
+                return redirect()->away($verifiedPage . '?verified=expired');
+            }
+
+            $user->update([
+                'email_verified_at' => now(),
+                'email_verification_token' => null,
+                'email_verification_token_expires_at' => null,
+            ]);
+
+            return redirect()->away($verifiedPage . '?verified=1');
 
         } catch (\Throwable $th) {
 
-            DB::rollBack();
+            $this->logException($th);
+
+            return redirect()->away($verifiedPage . '?verified=error');
+        }
+    }
+
+    public function resendVerification(Request $request): JsonResponse
+    {
+        try {
+
+            $request->validate(['email' => 'required|email']);
+
+            $user = User::where('email', $request->email)
+                ->whereNull('email_verified_at')
+                ->first();
+
+            if (!$user) {
+                // Return success regardless to prevent email enumeration
+                return $this->success(__("messages.SS006", ["attribute" => "Verification mail"]));
+            }
+
+            $rawToken = Str::random(64);
+
+            $user->update([
+                'email_verification_token' => hash('sha256', $rawToken),
+                'email_verification_token_expires_at' => now()->addHours(24),
+            ]);
+
+            $mailData = [
+                'user_name' => $user->name,
+                'verification_url' => config('app.url') . '/api/users/activate?token=' . $rawToken,
+            ];
+
+            Mail::to($user->email)->send(new UserRegisterMail($mailData));
+
+            return $this->success(__("messages.SS006", ["attribute" => "Verification mail"]));
+
+        } catch (\Throwable $th) {
 
             $this->logException($th);
 

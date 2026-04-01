@@ -133,9 +133,6 @@ class NovelController extends Controller
         try {
 
             $user_id = request()->query("user_id");
-            
-            DB::beginTransaction();
-
             $novel = $this->novelI->getNovelDetailInfoById($id, $user_id);
 
             if (empty($novel)) {
@@ -152,18 +149,6 @@ class NovelController extends Controller
                 : $storage->url(config("default.image.cover"));
 
             $novel->cover_image = $img_url;
-
-            $data = [
-                "novel_id" => $novel->id,
-                "user_id" => null,
-                "ip_address" => request()->ip(),
-            ];
-
-            NovelView::create($data);
-
-            $novel->increment("view_count");
-
-            DB::commit();
 
             return $this->success(__("messages.SS008"), $novel);
 

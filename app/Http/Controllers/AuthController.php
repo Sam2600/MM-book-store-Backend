@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\DB;
 use App\Constants\Auth\AuthConstant;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 use App\Http\Requests\AuthUserLoginRequest;
 use App\Http\Requests\AuthUserRegisterRequest;
 use App\Mail\UserRegisterMail;
@@ -21,37 +22,35 @@ class AuthController extends Controller
     use Helper, ApiResponse;
 
     public function register(AuthUserRegisterRequest $request): JsonResponse
-    {   
+    {
         try {
 
             DB::beginTransaction();
-            
-            $userData = [
+
+            $rawToken = Str::random(64);
+
+            $user = User::create([
                 "name" => $request->name,
                 "email" => $request->email,
                 "password" => Hash::make($request->password),
-                "role_id" => $request->role_id ?? AuthConstant::ROLE_NORMAL_USER
-            ];
-    
-            $user = User::create($userData);
+                "role_id" => $request->role_id ?? AuthConstant::ROLE_NORMAL_USER,
+                "email_verification_token" => hash('sha256', $rawToken),
+                "email_verification_token_expires_at" => now()->addHours(24),
+            ]);
 
             $mailData = [
-                'user_id' => $user->id,
                 'user_name' => $user->name,
+                'verification_url' => config('app.url') . '/api/users/activate?token=' . $rawToken,
             ];
 
-            # If the user is saved, then send an activation message to user's email
-            if (!Mail::to($request->email)->send(new UserRegisterMail($mailData))) {
-                $errorMsg = __("messages.SE012", ["attribute" => __('Mail')]);
-                return $this->error($errorMsg, []);
-            };
-            
+            Mail::to($request->email)->send(new UserRegisterMail($mailData));
+
             DB::commit();
 
             return $this->success(
                 __("messages.SS001", ["attribute" => "User"])
             );
-        
+
         } catch(\Throwable $th) {
 
             DB::rollBack();
@@ -59,7 +58,7 @@ class AuthController extends Controller
             $this->logException($th);
 
             return $this->error(
-                __("messages.SE010"), 
+                __("messages.SE010"),
                 []
             );
         }

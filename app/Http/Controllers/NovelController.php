@@ -40,6 +40,7 @@ class NovelController extends Controller
             $popular_week = $this->novelI->getPopularThisWeekNovels();
             $popular_month = $this->novelI->getPopularThisMonthNovels();
             $popular_all_time = $this->novelI->getPopularAllTimeNovels();
+            $latest_updates = $this->novelI->getLatestUpdatedNovels();
 
             $disk = $this->getDisk();
 
@@ -59,6 +60,7 @@ class NovelController extends Controller
             $popular_week = $popular_week->map($mapCoverImage);
             $popular_month = $popular_month->map($mapCoverImage);
             $popular_all_time = $popular_all_time->map($mapCoverImage);
+            $latest_updates = $latest_updates->map($mapCoverImage);
 
             $data = compact(
                 "all_novel",
@@ -66,7 +68,8 @@ class NovelController extends Controller
                 "latest_novel",
                 "popular_week",
                 "popular_month",
-                "popular_all_time"
+                "popular_all_time",
+                "latest_updates"
             );
 
             return $this->success(

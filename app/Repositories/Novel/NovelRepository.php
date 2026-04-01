@@ -4,6 +4,7 @@ namespace App\Repositories\Novel;
 
 use Carbon\Carbon;
 use App\Models\Novel;
+use App\Models\Chapter;
 use App\Helpers\Helper;
 use App\Models\Category;
 use App\Models\NovelView;
@@ -111,6 +112,41 @@ class NovelRepository implements NovelRepositoryInterface
    public function getNovelByBookMarks(array $novel_ids)
    {
       return Novel::whereIn('id', $novel_ids)->get();
+   }
+
+   public function getLatestUpdatedNovels()
+   {
+      $novels = Novel::query()
+         ->select(['novels.id', 'novels.title', 'novels.status', 'novels.cover_image'])
+         ->join('volumes', 'novels.id', '=', 'volumes.novel_id')
+         ->join('chapters', 'volumes.id', '=', 'chapters.volume_id')
+         ->whereNull('chapters.deleted_at')
+         ->whereNull('volumes.deleted_at')
+         ->groupBy('novels.id', 'novels.title', 'novels.status', 'novels.cover_image')
+         ->orderByRaw('MAX(chapters.created_at) DESC')
+         ->limit(10)
+         ->get();
+
+      foreach ($novels as $novel) {
+         $novel->latest_chapters = Chapter::query()
+            ->join('volumes', 'chapters.volume_id', '=', 'volumes.id')
+            ->where('volumes.novel_id', $novel->id)
+            ->whereNull('chapters.deleted_at')
+            ->whereNull('volumes.deleted_at')
+            ->select([
+               'chapters.id',
+               'chapters.chapter_number',
+               'chapters.title',
+               'chapters.created_at',
+               'volumes.id as volume_id',
+               'volumes.volume_number',
+            ])
+            ->orderByDesc('chapters.created_at')
+            ->limit(3)
+            ->get();
+      }
+
+      return $novels;
    }
 
    public function getCurrentUserNovelChapters(int|string $novelId, int|string $userId)

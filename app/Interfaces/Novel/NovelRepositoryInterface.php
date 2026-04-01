@@ -25,4 +25,6 @@ interface NovelRepositoryInterface
    public function getNovelByBookMarks(array $novel_ids);
 
    public function getCurrentUserNovelChapters(int|string $novelId, int|string $userId);
+
+   public function getLatestUpdatedNovels();
 }

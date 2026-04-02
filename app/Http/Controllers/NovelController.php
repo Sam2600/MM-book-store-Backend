@@ -139,7 +139,7 @@ class NovelController extends Controller
             $novel = $this->novelI->getNovelDetailInfoById($id, $user_id);
 
             if (empty($novel)) {
-                return $this->error(__("messages.SE004"), ["attribute" => "Novel"]);
+                return $this->error(__("messages.SE004", ["attribute" => "Novel"]), []);
             }
             
             $disk = $this->getDisk();
@@ -183,7 +183,7 @@ class NovelController extends Controller
             $novel = $this->novelI->getNovelDetailInfoById($request->novel_id, $user->id);
 
             if (empty($novel)) {
-                return $this->error(__("messages.SE004"), ["attribute" => "Novel"]);
+                return $this->error(__("messages.SE004", ["attribute" => "Novel"]), []);
             }
 
             $isBookmarkExists = $this->bookmarkI->checkBookmarkExists($request->novel_id, $user->id);
@@ -304,7 +304,7 @@ class NovelController extends Controller
             $novel = $this->novelI->getNovelDetailInfoById($id, $user->id);
 
             if (empty($novel)) {
-                return $this->error(__("messages.SE004"), ["attribute" => "Novel"]);
+                return $this->error(__("messages.SE004", ["attribute" => "Novel"]), []);
             }
 
             $isRatingExists = $this->ratingI->checkRatingExists($id, $user->id);

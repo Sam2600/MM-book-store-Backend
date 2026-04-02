@@ -82,7 +82,7 @@ class NovelRepository implements NovelRepositoryInterface
       return Novel::where('translator_id', $user->id)->select('id', 'title')->get();
    }
 
-   public function getNovelDetailInfoById(int $id, int|string|null $user_id)
+   public function getNovelDetailInfoById(int|string $id, int|string|null $user_id)
    {
       return Novel::with([
          'translator',
@@ -95,11 +95,10 @@ class NovelRepository implements NovelRepositoryInterface
       ])
       ->withCount('ratings as user_rating_count')
       ->withAvg('ratings as average_rating', 'rating')
-      ->find($id)
-      ->makeHidden(['updated_at']);
+      ->find($id);
    }
 
-   public function getNovelById(int|String $id)
+   public function getNovelById(int|string $id)
    {
       return Novel::where('id', $id)->first();
    }

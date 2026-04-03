@@ -345,6 +345,42 @@ class NovelController extends Controller
         }
     }
 
+    public function search(Request $request): JsonResponse
+    {
+        try {
+
+            $q = $request->query('q', '');
+
+            if (empty($q)) {
+                return $this->success(__("messages.SS008"), []);
+            }
+
+            $novels = Novel::select(['id', 'title', 'cover_image'])
+                ->where('title', 'LIKE', "%{$q}%")
+                ->orWhere('original_book_name', 'LIKE', "%{$q}%")
+                ->limit(10)
+                ->get();
+
+            $disk = $this->getDisk();
+            $storage = Storage::disk($disk);
+
+            $novels = $novels->map(function (Novel $novel) use ($storage) {
+                $novel->cover_image = !empty($novel->cover_image)
+                    ? $storage->url($novel->cover_image)
+                    : $storage->url(config("default.image.cover"));
+                return $novel;
+            });
+
+            return $this->success(__("messages.SS008"), $novels);
+
+        } catch (\Throwable $th) {
+
+            $this->logException($th);
+
+            return $this->error(__("messages.SE010"), []);
+        }
+    }
+
     public function getNovelsByCategory($id) {
 
         try {

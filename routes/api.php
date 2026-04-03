@@ -53,6 +53,7 @@ Route::middleware('auth:sanctum')->group(function () {
 Route::get('/author/{id}', [UserController::class, 'getAuthorInfoAndNovels']);
 
 Route::get('/novels', [NovelController::class, 'index']);
+Route::get('/novels/search', [NovelController::class, 'search']);
 Route::get('/novels/{id}', [NovelController::class, 'show']);
 Route::get('/novels/{novelId}/volumes/{volumeId}/chapters/{chapterId}', [ChapterController::class, 'show']);
 

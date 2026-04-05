@@ -24,6 +24,8 @@ class User extends Authenticatable implements MustVerifyEmail
         'role_id',
         'password',
         'coins',
+        'payment_method',
+        'payment_account',
         'email_verified_at',
         'email_verification_token',
         'email_verification_token_expires_at',

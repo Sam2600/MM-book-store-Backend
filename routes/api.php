@@ -9,6 +9,8 @@ use App\Http\Controllers\NovelController;
 use App\Http\Controllers\VolumeController;
 use App\Http\Controllers\ChapterController;
 use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\EarningsController;
+use App\Http\Controllers\PayoutController;
 use Illuminate\Support\Facades\Storage;
 
 /*
@@ -48,6 +50,17 @@ Route::middleware('auth:sanctum')->group(function () {
     
     Route::post('/bookmarks', [NovelController::class, 'bookmarkNovel']);
     Route::get('/getBookMarkedCollection', [NovelController::class, 'getBookMarkedCollection']);
+
+    // Author: payment info + earnings + payouts
+    Route::patch('/me/payment-info', [UserController::class, 'updatePaymentInfo']);
+    Route::get('/author/earnings/stats', [EarningsController::class, 'authorStats']);
+    Route::get('/author/payouts', [PayoutController::class, 'authorIndex']);
+
+    // Admin: earnings calculation + payout management
+    Route::post('/admin/earnings/calculate', [EarningsController::class, 'calculate']);
+    Route::get('/admin/payouts', [PayoutController::class, 'adminIndex']);
+    Route::post('/admin/payouts', [PayoutController::class, 'store']);
+    Route::patch('/admin/payouts/{payout}/mark-paid', [PayoutController::class, 'markPaid']);
 });
 
 Route::get('/author/{id}', [UserController::class, 'getAuthorInfoAndNovels']);

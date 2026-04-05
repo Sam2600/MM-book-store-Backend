@@ -24,6 +24,7 @@ use Smalot\PdfParser\Parser;
 use Illuminate\Support\HtmlString;
 use Illuminate\Http\Request;
 use App\Models\NovelView;
+use App\Models\ChapterRead;
 
 class ChapterController extends Controller
 {
@@ -57,17 +58,15 @@ class ChapterController extends Controller
 
             if (is_null($volume)) {
 
-                // Create a new volume if none provided
-                $volumeCount = $this->volumeI->getNovelTotalVolumeById($request->novel_id);
-
                 $vol = [
-                    "order" => $volumeCount + 1,
                     "novel_id" => $request->novel_id,
                     "volume_number" => $request->volume_number,
                     "volume_title" => $request->volume_title ?? "",
                 ];
 
                 $volume = Volume::create($vol);
+            } else {
+                $volume->update(['volume_title' => $request->volume_title ?? $volume->volume_title]);
             }
 
             // 2. VALIDATE CHAPTER SEQUENCE
@@ -89,7 +88,7 @@ class ChapterController extends Controller
                 return $this->error("Chapter {$request->chapter_number} already exists in this volume.");
             }
 
-            $path = "/novels/{$request->novel_name}";
+            $path = "/novels/" . $this->sanitizeDirName($request->novel_name);
 
             $this->checkAndCreateDirectory($this->getDefaultDisk(), $path);
 
@@ -148,9 +147,9 @@ class ChapterController extends Controller
             if (is_null($chapter)) {
                 return $this->error(__("messages.SE004", ["attribute" => "Chapter"]));
             }
-
-            $this->recordNovelView($novel);
             
+            $this->recordChapterRead($novel, $chapter);
+
             $this->attachPagination($novel, $chapter);
 
             DB::commit();
@@ -332,7 +331,6 @@ class ChapterController extends Controller
                 "status" => "spent",
                 "coin_amount" => $chapter->coin_cost,
                 "description" => "Purchased chapter: {$chapter->title}",
-                "purchased_at" => now()
             ];
             
             CoinHistory::create($coin_hist);
@@ -375,9 +373,46 @@ class ChapterController extends Controller
 
             $chapter = Chapter::findOrFail($id);
 
-            $volume = Volume::findOrFail($chapter->volume_id);
+            // 1. VALIDATE VOLUME SEQUENCE
+            $maxVolume = Volume::where('novel_id', $request->novel_id)->max('volume_number') ?? 0;
 
-            $path = "/novels/{$volume->novel->name}";
+            if ($request->volume_number > ($maxVolume + 1)) {
+                return $this->error("You cannot skip volumes. The next available volume is " . ($maxVolume + 1));
+            }
+
+            // Resolve or create the target volume (same logic as store)
+            $volume = $this->volumeI->checkVolumeByIds($request->novel_id, $request->volume_number);
+
+            if (is_null($volume)) {
+                $volume = Volume::create([
+                    "novel_id"      => $request->novel_id,
+                    "volume_number" => $request->volume_number,
+                    "volume_title"  => $request->volume_title ?? "",
+                ]);
+            } else {
+                $volume->update(['volume_title' => $request->volume_title ?? $volume->volume_title]);
+            }
+
+            // 2. VALIDATE CHAPTER SEQUENCE (exclude current chapter so it doesn't skew the max)
+            $maxChapter = Chapter::whereHas('volume', function ($q) use ($request) {
+                $q->where('novel_id', $request->novel_id);
+            })->where('id', '!=', $id)->max('chapter_number') ?? 0;
+
+            if ($request->chapter_number > ($maxChapter + 1)) {
+                return $this->error("You cannot skip chapters. The next available chapter is " . ($maxChapter + 1));
+            }
+
+            // 3. PREVENT DUPLICATE CHAPTERS in target volume (exclude current chapter)
+            $exists = Chapter::where('volume_id', $volume->id)
+                ->where('chapter_number', $request->chapter_number)
+                ->where('id', '!=', $id)
+                ->exists();
+
+            if ($exists) {
+                return $this->error("Chapter {$request->chapter_number} already exists in this volume.");
+            }
+
+            $path = "/novels/" . $this->sanitizeDirName($request->novel_name);
 
             $this->checkAndCreateDirectory($this->getDefaultDisk(), $path);
 
@@ -397,12 +432,13 @@ class ChapterController extends Controller
             }
 
             $chpt = [
+                "volume_id"      => $volume->id,
                 "chapter_number" => $request->chapter_number,
-                "title" => $request->title,
-                "content" => $request->content,
-                "coin_cost" => $request->coin_cost ?? 1,
-                "status" => $request->status ?? "approved",
-                "file_path" => $relativePath
+                "title"          => $request->title,
+                "content"        => $request->content,
+                "coin_cost"      => $request->coin_cost ?? 1,
+                "status"         => $request->status ?? "approved",
+                "file_path"      => $relativePath
             ];
 
             $chapter->update($chpt);
@@ -426,21 +462,29 @@ class ChapterController extends Controller
         }
     }
 
+    private function sanitizeDirName(string $name): string
+    {
+        // Remove characters invalid in Windows directory names: < > : " / \ | ? *
+        $name = preg_replace('/[<>:"\/\\\\|?*]/', '', $name);
+        // Strip trailing periods and spaces — Windows rejects directory names ending with these
+        return rtrim($name, '. ');
+    }
+
     private function generateChapterFileName(int|string $id, string $title, string $extension): string
     {
         return "chapter-{$id}_({$title})_" . now()->format("Ymd_His") . "_" . Str::random(8) . ".{$extension}";
     }
 
     /**
-     * Handles the logic for unique view counting with a 24-hour cooldown.
+     * Records a chapter read with 24-hour deduplication per user/IP.
+     * This is the metric used for author payout calculations.
      */
-    private function recordNovelView($novel): void
+    private function recordChapterRead($novel, $chapter): void
     {
-        $ip = request()->ip();
+        $ip     = request()->ip();
         $userId = request()->query("user_id");
 
-        // Check for existing view in the last 24 hours
-        $recentViewExists = NovelView::where('novel_id', $novel->id)
+        $recentReadExists = ChapterRead::where('chapter_id', $chapter->id)
             ->where(function ($query) use ($userId, $ip) {
                 if ($userId) {
                     $query->where('user_id', $userId);
@@ -451,14 +495,13 @@ class ChapterController extends Controller
             ->where('created_at', '>', now()->subDay())
             ->exists();
 
-        if (!$recentViewExists) {
-            NovelView::create([
-                "novel_id"   => $novel->id,
-                "user_id"    => $userId,
-                "ip_address" => $ip,
+        if (!$recentReadExists) {
+            ChapterRead::create([
+                'chapter_id' => $chapter->id,
+                'novel_id'   => $novel->id,
+                'user_id'    => $userId,
+                'ip_address' => $ip,
             ]);
-
-            $novel->increment("view_count");
         }
     }
 

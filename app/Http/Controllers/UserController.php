@@ -127,6 +127,33 @@ class UserController extends Controller
         }
     }
 
+    public function updatePaymentInfo(Request $request): JsonResponse
+    {
+        try {
+
+            $request->validate([
+                'payment_method'  => 'required|in:kbzpay,wave,aya_pay,bank_transfer',
+                'payment_account' => 'required|string|max:100',
+            ]);
+
+            $request->user()->update([
+                'payment_method'  => $request->payment_method,
+                'payment_account' => $request->payment_account,
+            ]);
+
+            return $this->success(__("messages.SS007", ["attribute" => "Payment info"]), [
+                'payment_method'  => $request->payment_method,
+                'payment_account' => $request->payment_account,
+            ]);
+
+        } catch (\Throwable $th) {
+
+            $this->logException($th);
+
+            return $this->error(__("messages.SE010"), []);
+        }
+    }
+
     public function resendVerification(Request $request): JsonResponse
     {
         try {

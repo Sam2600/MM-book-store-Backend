@@ -15,7 +15,6 @@ return new class extends Migration
             $table->id();
             $table->foreignId('translator_id')->constrained('users');
             $table->foreignId('novel_id')->constrained('novels');
-            $table->foreignId('rate_id')->constrained('rates');
             $table->unsignedInteger('coins_earned');
             $table->timestamp('earned_at');
             $table->softDeletes();

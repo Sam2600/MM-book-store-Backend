@@ -11,7 +11,7 @@ class AuthorEarning extends Model
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
-        'translator_id', 'chapter_id', 'coins_earned', 'earned_at'
+        'translator_id', 'novel_id', 'chapter_id', 'rate_id', 'coins_earned', 'amount', 'source', 'period', 'earned_at'
     ];
 
     public function author()

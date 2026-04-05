@@ -69,7 +69,7 @@ class NovelRepository implements NovelRepositoryInterface
             $query->select('id', 'name');
          }])->select('id', 'translator_id', 'title', 'cover_image', 'view_count', 'created_at')
          ->orderBy('created_at', 'desc')
-         ->take(5)
+         ->take(6)
          ->get();
    }
 

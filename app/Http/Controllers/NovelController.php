@@ -141,6 +141,8 @@ class NovelController extends Controller
             if (empty($novel)) {
                 return $this->error(__("messages.SE004", ["attribute" => "Novel"]), []);
             }
+
+            $this->recordNovelView($novel);
             
             $disk = $this->getDisk();
 
@@ -408,6 +410,37 @@ class NovelController extends Controller
             
             $this->logException($th);
             return $this->error(__("messages.SE010"), []);
+        }
+    }
+
+    /**
+     * Handles the logic for unique view counting with a 24-hour cooldown.
+     */
+    private function recordNovelView($novel): void
+    {
+        $ip = request()->ip();
+        $userId = request()->query("user_id") ?? null;
+
+        // Check for existing view in the last 24 hours
+        $recentViewExists = NovelView::where('novel_id', $novel->id)
+            ->where(function ($query) use ($userId, $ip) {
+                if ($userId) {
+                    $query->where('user_id', $userId);
+                } else {
+                    $query->where('ip_address', $ip);
+                }
+            })
+            ->where('created_at', '>', now()->subDay())
+            ->exists();
+
+        if (!$recentViewExists) {
+            NovelView::create([
+                "novel_id"   => $novel->id,
+                "user_id"    => $userId,
+                "ip_address" => $ip,
+            ]);
+
+            $novel->increment("view_count");
         }
     }
 

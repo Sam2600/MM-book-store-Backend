@@ -32,7 +32,6 @@ class CoinHistoryFactory extends Factory
             'status' => $this->faker->randomElement(['spent', 'earned']),
             'coin_amount' => $this->faker->numberBetween(1, 100),
             'description' => $this->faker->sentence,
-            'purchased_at' => $this->faker->dateTimeThisYear,
         ];
     }
 }

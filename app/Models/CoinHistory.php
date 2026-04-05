@@ -18,7 +18,6 @@ class CoinHistory extends Model
         'status',
         'coin_amount',
         'description',
-        'purchased_at',
     ];
 
     public function user()

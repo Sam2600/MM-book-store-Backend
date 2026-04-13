@@ -41,6 +41,7 @@ class NovelController extends Controller
             $popular_month = $this->novelI->getPopularThisMonthNovels();
             $popular_all_time = $this->novelI->getPopularAllTimeNovels();
             $latest_updates = $this->novelI->getLatestUpdatedNovels();
+            $ended_novels = $this->novelI->getEndedNovels(8);
 
             $disk = $this->getDisk();
 
@@ -61,6 +62,7 @@ class NovelController extends Controller
             $popular_month = $popular_month->map($mapCoverImage);
             $popular_all_time = $popular_all_time->map($mapCoverImage);
             $latest_updates = $latest_updates->map($mapCoverImage);
+            $ended_novels = $ended_novels->map($mapCoverImage);
 
             $data = compact(
                 "all_novel",
@@ -69,7 +71,8 @@ class NovelController extends Controller
                 "popular_week",
                 "popular_month",
                 "popular_all_time",
-                "latest_updates"
+                "latest_updates",
+                "ended_novels"
             );
 
             return $this->success(
@@ -340,6 +343,29 @@ class NovelController extends Controller
         } catch (\Throwable $th) {
 
             DB::rollBack();
+
+            $this->logException($th);
+
+            return $this->error(__("messages.SE010"), []);
+        }
+    }
+
+    public function endedNovels(Request $request): JsonResponse
+    {
+        try {
+
+            $paginator = Novel::where('status', 'completed')
+                ->select('id', 'title', 'cover_image', 'status', 'updated_at')
+                ->orderByDesc('updated_at')
+                ->paginate(15);
+
+            foreach ($paginator as $novel) {
+                $novel->cover_image = $this->getImageWithDBpath($novel->cover_image ?? '');
+            }
+
+            return $this->success(__("messages.SS008"), $paginator);
+
+        } catch (\Throwable $th) {
 
             $this->logException($th);
 

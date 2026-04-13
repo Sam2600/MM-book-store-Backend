@@ -148,6 +148,23 @@ class NovelRepository implements NovelRepositoryInterface
       return $novels;
    }
 
+   public function getEndedNovels(int $limit = 8)
+   {
+      return Novel::where('status', 'completed')
+         ->select('id', 'title', 'cover_image', 'status', 'updated_at')
+         ->orderByDesc('updated_at')
+         ->limit($limit)
+         ->get();
+   }
+
+   public function getAllEndedNovels()
+   {
+      return Novel::where('status', 'completed')
+         ->select('id', 'title', 'cover_image', 'status', 'updated_at')
+         ->orderByDesc('updated_at')
+         ->get();
+   }
+
    public function getCurrentUserNovelChapters(int|string $novelId, int|string $userId)
    {
       return DB::table('user_chapters')

@@ -27,4 +27,8 @@ interface NovelRepositoryInterface
    public function getCurrentUserNovelChapters(int|string $novelId, int|string $userId);
 
    public function getLatestUpdatedNovels();
+
+   public function getEndedNovels(int $limit = 8);
+
+   public function getAllEndedNovels();
 }

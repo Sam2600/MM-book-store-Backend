@@ -24,6 +24,9 @@ class DatabaseSeeder extends Seeder
         // Initialize Faker
         $faker = Faker::create();
 
+        // Seed payment methods
+        $this->call(PaymentMethodSeeder::class);
+
         // Seed roles
         $adminRole = Role::firstOrCreate(['name' => 'admin']);
         $systemUser = Role::firstOrCreate(['name' => 'system_user']);

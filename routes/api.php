@@ -11,6 +11,7 @@ use App\Http\Controllers\ChapterController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\EarningsController;
 use App\Http\Controllers\PayoutController;
+use App\Http\Controllers\PaymentMethodController;
 use Illuminate\Support\Facades\Storage;
 
 /*
@@ -51,7 +52,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/bookmarks', [NovelController::class, 'bookmarkNovel']);
     Route::get('/getBookMarkedCollection', [NovelController::class, 'getBookMarkedCollection']);
 
-    // Author: payment info + earnings + payouts
+    // Author: profile update, payment info + earnings + payouts
+    Route::patch('/me/profile', [UserController::class, 'updateProfile']);
     Route::patch('/me/payment-info', [UserController::class, 'updatePaymentInfo']);
     Route::get('/author/earnings/stats', [EarningsController::class, 'authorStats']);
     Route::get('/author/payouts', [PayoutController::class, 'authorIndex']);
@@ -72,5 +74,6 @@ Route::get('/novels/{novelId}/volumes/{volumeId}/chapters/{chapterId}', [Chapter
 
 Route::get('/users/activate', [UserController::class, 'activate']);
 
+Route::get('/payment-methods', [PaymentMethodController::class, 'index']);
 Route::get('/categories', [CategoryController::class, 'index']);
 Route::get('/categories/{id}/novels', [NovelController::class, 'getNovelsByCategory']);

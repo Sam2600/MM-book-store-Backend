@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
+use App\Http\Requests\UpdateProfileRequest;
 use App\Interfaces\User\UserRepositoryInterface;
 use App\Mail\UserRegisterMail;
 use App\Models\User;
@@ -127,23 +128,44 @@ class UserController extends Controller
         }
     }
 
+    public function updateProfile(UpdateProfileRequest $request): JsonResponse
+    {
+        try {
+
+            $request->user()->update([
+                'name'              => $request->name,
+                'email'             => $request->email,
+                'payment_method_id' => $request->payment_method_id,
+                'payment_account'   => $request->payment_account,
+            ]);
+
+            return $this->success(__("messages.SS007", ["attribute" => "Profile"]), $request->user()->fresh()->load('paymentMethod'));
+
+        } catch (\Throwable $th) {
+
+            $this->logException($th);
+
+            return $this->error(__("messages.SE010"), []);
+        }
+    }
+
     public function updatePaymentInfo(Request $request): JsonResponse
     {
         try {
 
             $request->validate([
-                'payment_method'  => 'required|in:kbzpay,wave,aya_pay,bank_transfer',
-                'payment_account' => 'required|string|max:100',
+                'payment_method_id' => 'required|exists:payment_methods,id',
+                'payment_account'   => 'required|string|max:100',
             ]);
 
             $request->user()->update([
-                'payment_method'  => $request->payment_method,
-                'payment_account' => $request->payment_account,
+                'payment_method_id' => $request->payment_method_id,
+                'payment_account'   => $request->payment_account,
             ]);
 
             return $this->success(__("messages.SS007", ["attribute" => "Payment info"]), [
-                'payment_method'  => $request->payment_method,
-                'payment_account' => $request->payment_account,
+                'payment_method_id' => $request->payment_method_id,
+                'payment_account'   => $request->payment_account,
             ]);
 
         } catch (\Throwable $th) {

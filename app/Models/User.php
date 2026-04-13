@@ -24,7 +24,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'role_id',
         'password',
         'coins',
-        'payment_method',
+        'payment_method_id',
         'payment_account',
         'email_verified_at',
         'email_verification_token',
@@ -89,5 +89,10 @@ class User extends Authenticatable implements MustVerifyEmail
     public function bookmarks()
     {
         return $this->hasMany(Bookmark::class, 'user_id');
+    }
+
+    public function paymentMethod()
+    {
+        return $this->belongsTo(PaymentMethod::class, 'payment_method_id');
     }
 }

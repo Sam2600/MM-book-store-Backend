@@ -25,12 +25,12 @@ class PayoutController extends Controller
         $request->validate([
             'translator_id'   => 'required|exists:users,id',
             'period'          => 'required|date_format:Y-m',
-            'payment_method'  => 'nullable|in:kbzpay,wave,aya_pay,bank_transfer',
+            'payment_method'  => 'nullable|string|max:100',
             'payment_account' => 'nullable|string|max:100',
             'note'            => 'nullable|string',
         ]);
 
-        $translator = User::findOrFail($request->translator_id);
+        $translator = User::with('paymentMethod')->findOrFail($request->translator_id);
 
         $total = AuthorEarning::where('translator_id', $request->translator_id)
             ->where('source', 'ad_revenue')
@@ -42,7 +42,7 @@ class PayoutController extends Controller
         }
 
         // Use author's saved payment info as default; admin can override per payout.
-        $method  = $request->payment_method  ?? $translator->payment_method;
+        $method  = $request->payment_method  ?? $translator->paymentMethod?->code;
         $account = $request->payment_account ?? $translator->payment_account;
 
         if (!$method || !$account) {

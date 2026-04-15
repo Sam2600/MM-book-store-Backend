@@ -19,6 +19,7 @@ class Payout extends Model
         'reference_number',
         'note',
         'paid_at',
+        'processed_by',
     ];
 
     protected $casts = [
@@ -29,5 +30,10 @@ class Payout extends Model
     public function author()
     {
         return $this->belongsTo(User::class, 'translator_id');
+    }
+
+    public function processedBy()
+    {
+        return $this->belongsTo(User::class, 'processed_by');
     }
 }

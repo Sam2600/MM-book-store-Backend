@@ -58,11 +58,23 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/author/earnings/stats', [EarningsController::class, 'authorStats']);
     Route::get('/author/payouts', [PayoutController::class, 'authorIndex']);
 
-    // Admin: earnings calculation + payout management
+    // Admin: earnings calculation
     Route::post('/admin/earnings/calculate', [EarningsController::class, 'calculate']);
+    Route::post('/admin/earnings/calculate-and-create-payouts', [EarningsController::class, 'calculateAndCreatePayouts']);
+
+    // Admin: payout management
+    // Note: specific routes (summary, bulk-create, bulk-mark-paid, export) must come
+    // before the wildcard {payout} route so Laravel matches them correctly.
+    Route::get('/admin/payouts/summary', [PayoutController::class, 'summary']);
+    Route::get('/admin/payouts/export', [PayoutController::class, 'export']);
+    Route::post('/admin/payouts/bulk-create', [PayoutController::class, 'bulkCreate']);
+    Route::post('/admin/payouts/bulk-mark-paid', [PayoutController::class, 'bulkMarkPaid']);
     Route::get('/admin/payouts', [PayoutController::class, 'adminIndex']);
     Route::post('/admin/payouts', [PayoutController::class, 'store']);
     Route::patch('/admin/payouts/{payout}/mark-paid', [PayoutController::class, 'markPaid']);
+
+    // Author: self-service payout request
+    Route::post('/author/payouts/request', [PayoutController::class, 'authorRequestPayout']);
 });
 
 Route::get('/author/{id}', [UserController::class, 'getAuthorInfoAndNovels']);

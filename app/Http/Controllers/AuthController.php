@@ -29,14 +29,22 @@ class AuthController extends Controller
 
             $rawToken = Str::random(64);
 
+            // role_id and coins are intentionally excluded from $fillable.
+            // Set them via direct assignment to prevent mass-assignment escalation.
             $user = User::create([
-                "name" => $request->name,
-                "email" => $request->email,
+                "name"     => $request->name,
+                "email"    => $request->email,
                 "password" => Hash::make($request->password),
-                "role_id" => $request->role_id ?? AuthConstant::ROLE_NORMAL_USER,
-                "email_verification_token" => hash('sha256', $rawToken),
-                "email_verification_token_expires_at" => now()->addHours(24),
+                "email_verification_token"             => hash('sha256', $rawToken),
+                "email_verification_token_expires_at"  => now()->addHours(24),
             ]);
+
+            // Only allow role 3 (author) or 4 (normal user) — never trust client input blindly.
+            $allowedRoles = [AuthConstant::ROLE_AUTHOR, AuthConstant::ROLE_NORMAL_USER];
+            $user->role_id = in_array((int) $request->role_id, $allowedRoles, true)
+                ? (int) $request->role_id
+                : AuthConstant::ROLE_NORMAL_USER;
+            $user->save();
 
             $mailData = [
                 'user_name' => $user->name,
@@ -86,7 +94,7 @@ class AuthController extends Controller
                 $token = $user->createToken("auth_token")->plainTextToken;
 
                 $data = [
-                    "user" => Auth::user(),
+                    "user" => $user->only("id", "name", "email", "role_id", "created_at"),
                     "token" => $token,
                 ];
 

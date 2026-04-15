@@ -30,12 +30,14 @@ class ChapterRegisterRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'novel_id' => 'required|exists:novels,id',
-            'volume_number' => 'required|integer',
-            'chapter_number' => 'required|integer',
-            'title' => 'required|string',
-            'volume_title' => 'nullable|string',
-            'content' => 'required|string',
+            'novel_id'       => 'required|exists:novels,id',
+            'novel_name'     => 'required|string|max:255',
+            'volume_number'  => 'required|integer|min:1',
+            'volume_title'   => 'nullable|string|max:255',
+            'chapter_number' => 'required|integer|min:1',
+            'title'          => 'required|string|max:255',
+            'content'        => 'required|string',
+            'coin_cost'      => 'nullable|integer|min:0|max:9999',
         ];
     }
 }

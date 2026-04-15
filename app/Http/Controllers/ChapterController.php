@@ -46,6 +46,15 @@ class ChapterController extends Controller
 
             DB::beginTransaction();
 
+            // 0. VERIFY NOVEL OWNERSHIP
+            $novel = Novel::where('id', $request->novel_id)
+                ->where('translator_id', $request->user()->id)
+                ->first();
+
+            if (!$novel) {
+                return $this->forBidden('You do not have permission to add chapters to this novel.');
+            }
+
             // 1. VALIDATE VOLUME SEQUENCE
             $maxVolume = Volume::where('novel_id', $request->novel_id)->max('volume_number') ?? 0;
             
@@ -103,13 +112,13 @@ class ChapterController extends Controller
             Pdf::loadView("pdf.chapter", compact("content"))->save($fullStoragePath);
 
             $chpt = [
-                "volume_id" => $volume->id,
+                "volume_id"      => $volume->id,
                 "chapter_number" => $request->chapter_number,
-                "title" => $request->title,
-                "content" => $request->content,
-                "coin_cost" => $request->coin_cost ?? 1,
-                "status" => $request->status ?? "approved",
-                "file_path" => $relativePath
+                "title"          => $request->title,
+                "content"        => $request->content,
+                "coin_cost"      => $request->coin_cost ?? 1,
+                "status"         => "approved", // Never accept status from client
+                "file_path"      => $relativePath,
             ];
 
             $chapter = Chapter::create($chpt);
@@ -286,7 +295,10 @@ class ChapterController extends Controller
 
         try {
 
-            $user = $request->user();
+            // Lock the user row for the duration of the transaction to prevent
+            // a race condition where two concurrent requests both pass the coin
+            // balance check before either decrement has committed.
+            $user = User::where('id', $request->user()->id)->lockForUpdate()->firstOrFail();
 
             // Check if the novel exists
             $novel = $this->novelI->getNovelById($novelId);
@@ -373,6 +385,15 @@ class ChapterController extends Controller
 
             $chapter = Chapter::findOrFail($id);
 
+            // 0. VERIFY NOVEL OWNERSHIP
+            $novel = Novel::where('id', $request->novel_id)
+                ->where('translator_id', $request->user()->id)
+                ->first();
+
+            if (!$novel) {
+                return $this->forBidden('You do not have permission to edit chapters of this novel.');
+            }
+
             // 1. VALIDATE VOLUME SEQUENCE
             $maxVolume = Volume::where('novel_id', $request->novel_id)->max('volume_number') ?? 0;
 
@@ -437,8 +458,8 @@ class ChapterController extends Controller
                 "title"          => $request->title,
                 "content"        => $request->content,
                 "coin_cost"      => $request->coin_cost ?? 1,
-                "status"         => $request->status ?? "approved",
-                "file_path"      => $relativePath
+                "status"         => "approved", // Never accept status from client
+                "file_path"      => $relativePath,
             ];
 
             $chapter->update($chpt);
@@ -511,24 +532,55 @@ class ChapterController extends Controller
     private function findChapter($novel, $volumeNumber, $chapterNumber)
     {
         return $novel->chapters()
+            ->with('volume')
             ->whereHas('volume', fn($q) => $q->where('volume_number', $volumeNumber))
             ->where('chapter_number', $chapterNumber)
             ->first();
     }
 
     /**
-     * Helper to calculate next/prev chapter numbers.
+     * Attach next/prev navigation to the chapter.
+     *
+     * Chapters are ordered by (volume_number ASC, chapter_number ASC) across
+     * the whole novel. Each result carries the volume_number so the frontend
+     * can build the correct URL even when crossing volume boundaries.
+     *
+     * Returns objects of the form { volume_number, chapter_number } or null.
      */
     private function attachPagination($novel, &$chapter): void
     {
-        $chapterNumbers = $novel->chapters->pluck('chapter_number')->toArray();
-        
-        $chapter->next_chapter = in_array($chapter->chapter_number + 1, $chapterNumbers)
-            ? $chapter->chapter_number + 1
+        // Flat ordered list of every chapter in the novel.
+        // Query from Chapter directly (not through the hasManyThrough relationship)
+        // to avoid a duplicate 'volumes' alias — the relationship already adds that join.
+        $ordered = Chapter::join('volumes', 'chapters.volume_id', '=', 'volumes.id')
+            ->where('volumes.novel_id', $novel->id)
+            ->whereNull('chapters.deleted_at')
+            ->whereNull('volumes.deleted_at')
+            ->orderBy('volumes.volume_number')
+            ->orderBy('chapters.chapter_number')
+            ->select('chapters.chapter_number', 'volumes.volume_number')
+            ->get();
+
+        // Locate the current chapter in that ordered list
+        $currentIndex = $ordered->search(function ($row) use ($chapter) {
+            return (int) $row->volume_number === (int) $chapter->volume->volume_number
+                && (int) $row->chapter_number === (int) $chapter->chapter_number;
+        });
+
+        $prev = ($currentIndex !== false && $currentIndex > 0)
+            ? $ordered[$currentIndex - 1]
             : null;
-            
-        $chapter->prev_chapter = in_array($chapter->chapter_number - 1, $chapterNumbers)
-            ? $chapter->chapter_number - 1
+
+        $next = ($currentIndex !== false && $currentIndex < $ordered->count() - 1)
+            ? $ordered[$currentIndex + 1]
+            : null;
+
+        $chapter->prev_chapter = $prev
+            ? ['volume_number' => (int) $prev->volume_number, 'chapter_number' => (int) $prev->chapter_number]
+            : null;
+
+        $chapter->next_chapter = $next
+            ? ['volume_number' => (int) $next->volume_number, 'chapter_number' => (int) $next->chapter_number]
             : null;
     }
 }

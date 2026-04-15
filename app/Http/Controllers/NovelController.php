@@ -33,8 +33,6 @@ class NovelController extends Controller
     public function index(): JsonResponse
     {
         try {
-
-            $all_novel = $this->novelI->getNovels();
             $categories = $this->categoryI->getCategories();
             $latest_novel = $this->novelI->getLatestNovels();
             $popular_week = $this->novelI->getPopularThisWeekNovels();
@@ -65,7 +63,6 @@ class NovelController extends Controller
             $ended_novels = $ended_novels->map($mapCoverImage);
 
             $data = compact(
-                "all_novel",
                 "categories",
                 "latest_novel",
                 "popular_week",
@@ -470,15 +467,12 @@ class NovelController extends Controller
         }
     }
 
-    private function storeFile(NovelRegisterRequest $request): String
-    {   
-         /** @var \Illuminate\Http\Request $request */
-
-        $file = $request->file("cover_image");
-
-        $filename = uniqid()."_".$file->getClientOriginalName();
-
-        return $file->storeAs("uploads", $filename, "public");
+    private function storeFile(NovelRegisterRequest $request): string
+    {
+        // store() generates a random UUID-based filename automatically.
+        // Never use getClientOriginalName() — client-controlled names can contain
+        // path traversal sequences or misleading extensions.
+        return $request->file("cover_image")->store("uploads", "public");
     }
 
     private function deleteFile(String $disk, String $path): void

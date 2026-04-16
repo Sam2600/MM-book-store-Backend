@@ -370,6 +370,52 @@ class NovelController extends Controller
         }
     }
 
+    public function browse(Request $request): JsonResponse
+    {
+        try {
+
+            $query = Novel::select(['novels.id', 'novels.title', 'novels.status', 'novels.cover_image'])
+                ->withAvg('ratings as average_rating', 'rating');
+
+            if ($request->filled('category')) {
+                $categoryId = $request->query('category');
+                $query->whereHas('categories', function ($q) use ($categoryId) {
+                    $q->where('categories.id', $categoryId);
+                });
+            }
+
+            if ($request->filled('status') && in_array($request->query('status'), ['ongoing', 'completed'])) {
+                $query->where('novels.status', $request->query('status'));
+            }
+
+            match ($request->query('sort', 'newest')) {
+                'oldest' => $query->orderBy('novels.created_at', 'asc'),
+                'rating' => $query->orderByDesc('average_rating'),
+                default  => $query->orderBy('novels.created_at', 'desc'),
+            };
+
+            $paginator = $query->paginate(15);
+
+            $disk    = $this->getDisk();
+            $storage = Storage::disk($disk);
+
+            $paginator->getCollection()->transform(function (Novel $novel) use ($storage) {
+                $novel->cover_image = !empty($novel->cover_image)
+                    ? $storage->url($novel->cover_image)
+                    : $storage->url(config('default.image.cover'));
+                return $novel;
+            });
+
+            return $this->success(__('messages.SS008'), $paginator);
+
+        } catch (\Throwable $th) {
+
+            $this->logException($th);
+
+            return $this->error(__('messages.SE010'), []);
+        }
+    }
+
     public function search(Request $request): JsonResponse
     {
         try {

@@ -38,6 +38,7 @@ Route::get('/author/{id}',              [UserController::class, 'getAuthorInfoAn
 Route::get('/novels',                   [NovelController::class, 'index']);
 Route::get('/novels/ended',             [NovelController::class, 'endedNovels']);
 Route::get('/novels/search',            [NovelController::class, 'search']);
+Route::get('/novels/browse',            [NovelController::class, 'browse']);
 Route::get('/novels/{id}',              [NovelController::class, 'show']);
 Route::get('/novels/{novelId}/volumes/{volumeId}/chapters/{chapterId}', [ChapterController::class, 'show']);
 Route::get('/payment-methods',          [PaymentMethodController::class, 'index']);

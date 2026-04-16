@@ -34,12 +34,12 @@ class NovelController extends Controller
     {
         try {
             $categories = $this->categoryI->getCategories();
-            $latest_novel = $this->novelI->getLatestNovels();
-            $popular_week = $this->novelI->getPopularThisWeekNovels();
-            $popular_month = $this->novelI->getPopularThisMonthNovels();
-            $popular_all_time = $this->novelI->getPopularAllTimeNovels();
-            $latest_updates = $this->novelI->getLatestUpdatedNovels();
-            $ended_novels = $this->novelI->getEndedNovels(8);
+            $latest_novel = $this->novelI->getLatestNovels(6);
+            $popular_week = $this->novelI->getPopularThisWeekNovels(12);
+            $popular_month = $this->novelI->getPopularThisMonthNovels(12);
+            $popular_all_time = $this->novelI->getPopularAllTimeNovels(12);
+            $latest_updates = $this->novelI->getLatestUpdatedNovels(12);
+            $ended_novels = $this->novelI->getEndedNovels(12);
 
             $disk = $this->getDisk();
 

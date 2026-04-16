@@ -22,7 +22,7 @@ class NovelRepository implements NovelRepositoryInterface
       return Novel::select('id', 'title')->get();
    }
 
-   public function getPopularThisWeekNovels()
+   public function getPopularThisWeekNovels(int $limit = 12)
    {
       $weekStart = Carbon::now()->subWeek()->startOfDay();
       
@@ -36,16 +36,16 @@ class NovelRepository implements NovelRepositoryInterface
          ->where('novel_views.created_at', '>=', $weekStart)
          ->groupBy('novels.id')
          ->orderByRaw('COUNT(novel_views.novel_id) DESC')
-         ->limit(10)
+         ->limit($limit)
          ->get();
    }
 
-   public function getPopularAllTimeNovels()
+   public function getPopularAllTimeNovels(int $limit = 6)
    {
-      return Novel::with('categories')->select('id', 'title', 'description', 'cover_image')->orderByDesc('view_count')->take(5)->get()->makeHidden(['created_at', 'updated_at']);
+      return Novel::with('categories')->select('id', 'title', 'description', 'cover_image')->orderByDesc('view_count')->take($limit)->get()->makeHidden(['created_at', 'updated_at']);
    }
 
-   public function getPopularThisMonthNovels()
+   public function getPopularThisMonthNovels(int $limit = 12)
    {
       $monthStart = now()->startOfMonth();
       
@@ -59,17 +59,17 @@ class NovelRepository implements NovelRepositoryInterface
          ->whereBetween('novel_views.created_at', [$monthStart, now()])
          ->groupBy('novels.id')
          ->orderByRaw('COUNT(novel_views.novel_id) DESC')
-         ->limit(10)
+         ->limit($limit)
          ->get();
    }
 
-   public function getLatestNovels()
+   public function getLatestNovels(int $limit = 6)
    {
       return Novel::with(['translator' => function($query) {
             $query->select('id', 'name');
          }])->select('id', 'translator_id', 'title', 'cover_image', 'view_count', 'created_at')
          ->orderBy('created_at', 'desc')
-         ->take(6)
+         ->take($limit)
          ->get();
    }
 
@@ -113,7 +113,7 @@ class NovelRepository implements NovelRepositoryInterface
       return Novel::whereIn('id', $novel_ids)->get();
    }
 
-   public function getLatestUpdatedNovels()
+   public function getLatestUpdatedNovels(int $limit = 12)
    {
       $novels = Novel::query()
          ->select(['novels.id', 'novels.title', 'novels.status', 'novels.cover_image'])
@@ -123,7 +123,7 @@ class NovelRepository implements NovelRepositoryInterface
          ->whereNull('volumes.deleted_at')
          ->groupBy('novels.id', 'novels.title', 'novels.status', 'novels.cover_image')
          ->orderByRaw('MAX(chapters.created_at) DESC')
-         ->limit(10)
+         ->limit($limit)
          ->get();
 
       foreach ($novels as $novel) {
@@ -148,7 +148,7 @@ class NovelRepository implements NovelRepositoryInterface
       return $novels;
    }
 
-   public function getEndedNovels(int $limit = 8)
+   public function getEndedNovels(int $limit = 12)
    {
       return Novel::where('status', 'completed')
          ->select('id', 'title', 'cover_image', 'status', 'updated_at')

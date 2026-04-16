@@ -97,19 +97,19 @@ class ChapterController extends Controller
                 return $this->error("Chapter {$request->chapter_number} already exists in this volume.");
             }
 
-            $path = "/novels/" . $this->sanitizeDirName($request->novel_name);
-
-            $this->checkAndCreateDirectory($this->getDefaultDisk(), $path);
-
-            $uniqueFileName = $this->generateChapterFileName($request->chapter_number, $request->title, "pdf");
-
-            $content = $request->content;
-
-            $relativePath = "{$path}/{$uniqueFileName}";
-
-            $fullStoragePath = public_path("storage/{$relativePath}");
-
-            Pdf::loadView("pdf.chapter", compact("content"))->save($fullStoragePath);
+            // ── PDF generation (temporarily disabled) ────────────────
+            // Reason: PDFs are never consumed by the web app — content is
+            // served directly from the database. On-demand export (PDF/EPUB)
+            // will be implemented as a dedicated API endpoint when the mobile
+            // app is built. See CHAPTER_EXPORT.md for the planned approach.
+            //
+            // $path = "/novels/" . $this->sanitizeDirName($request->novel_name);
+            // $this->checkAndCreateDirectory($this->getDefaultDisk(), $path);
+            // $uniqueFileName = $this->generateChapterFileName($request->chapter_number, $request->title, "pdf");
+            // $content = $request->content;
+            // $relativePath = "{$path}/{$uniqueFileName}";
+            // $fullStoragePath = public_path("storage/{$relativePath}");
+            // Pdf::loadView("pdf.chapter", compact("content"))->save($fullStoragePath);
 
             $chpt = [
                 "volume_id"      => $volume->id,
@@ -118,7 +118,7 @@ class ChapterController extends Controller
                 "content"        => $request->content,
                 "coin_cost"      => $request->coin_cost ?? 1,
                 "status"         => "approved", // Never accept status from client
-                "file_path"      => $relativePath,
+                "file_path"      => null,       // Populated on-demand when export is requested
             ];
 
             $chapter = Chapter::create($chpt);
@@ -133,8 +133,7 @@ class ChapterController extends Controller
 
             DB::rollBack();
 
-            // If a file was successfully uploaded before the error, delete it.
-            $this->deleteFile($this->getDefaultDisk(), $relativePath);
+            // $this->deleteFile($this->getDefaultDisk(), $relativePath);
             
             $this->logException($th);
 
@@ -433,24 +432,24 @@ class ChapterController extends Controller
                 return $this->error("Chapter {$request->chapter_number} already exists in this volume.");
             }
 
-            $path = "/novels/" . $this->sanitizeDirName($request->novel_name);
-
-            $this->checkAndCreateDirectory($this->getDefaultDisk(), $path);
-
-            $uniqueFileName = $this->generateChapterFileName($request->chapter_number, $request->title, "pdf");
-
-            $content = $request->content;
-
-            $relativePath = "{$path}/{$uniqueFileName}";
-
-            $fullStoragePath = public_path("storage/{$relativePath}");
-
-            Pdf::loadView("pdf.chapter", compact("content"))->save($fullStoragePath);
-
+            // ── PDF generation (temporarily disabled) ────────────────
+            // Reason: PDFs are never consumed by the web app — content is
+            // served directly from the database. On-demand export (PDF/EPUB)
+            // will be implemented as a dedicated API endpoint when the mobile
+            // app is built. See CHAPTER_EXPORT.md for the planned approach.
+            //
+            // $path = "/novels/" . $this->sanitizeDirName($request->novel_name);
+            // $this->checkAndCreateDirectory($this->getDefaultDisk(), $path);
+            // $uniqueFileName = $this->generateChapterFileName($request->chapter_number, $request->title, "pdf");
+            // $content = $request->content;
+            // $relativePath = "{$path}/{$uniqueFileName}";
+            // $fullStoragePath = public_path("storage/{$relativePath}");
+            // Pdf::loadView("pdf.chapter", compact("content"))->save($fullStoragePath);
+            //
             // Delete old chapter file if it exists
-            if ($chapter->file_path) {
-                $this->deleteFile($this->getDefaultDisk(), $chapter->file_path);
-            }
+            // if ($chapter->file_path) {
+            //     $this->deleteFile($this->getDefaultDisk(), $chapter->file_path);
+            // }
 
             $chpt = [
                 "volume_id"      => $volume->id,
@@ -459,7 +458,7 @@ class ChapterController extends Controller
                 "content"        => $request->content,
                 "coin_cost"      => $request->coin_cost ?? 1,
                 "status"         => "approved", // Never accept status from client
-                "file_path"      => $relativePath,
+                "file_path"      => null,       // Populated on-demand when export is requested
             ];
 
             $chapter->update($chpt);
@@ -473,9 +472,10 @@ class ChapterController extends Controller
             DB::rollBack();
 
             // If a new file was successfully uploaded before the error, delete it.
-            if (isset($relativePath) && !empty($relativePath)) {
-                $this->deleteFile($this->getDefaultDisk(), $relativePath);
-            }
+            // (No-op while PDF generation is disabled — no file is ever written.)
+            // if (isset($relativePath) && !empty($relativePath)) {
+            //     $this->deleteFile($this->getDefaultDisk(), $relativePath);
+            // }
             
             $this->logException($th);
 

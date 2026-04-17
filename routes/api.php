@@ -12,6 +12,7 @@ use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\EarningsController;
 use App\Http\Controllers\PayoutController;
 use App\Http\Controllers\PaymentMethodController;
+use App\Http\Controllers\PasswordResetController;
 use Illuminate\Support\Facades\Storage;
 
 /*
@@ -32,6 +33,11 @@ Route::middleware('throttle:10,1')->group(function () {
 Route::middleware('throttle:5,1')->group(function () {
     Route::post('/resend-verification', [UserController::class, 'resendVerification']);
     Route::get('/users/activate',       [UserController::class, 'activate']);
+});
+
+Route::middleware('throttle:5,1')->group(function () {
+    Route::post('/forgot-password', [PasswordResetController::class, 'forgotPassword']);
+    Route::post('/reset-password',  [PasswordResetController::class, 'resetPassword']);
 });
 
 Route::get('/author/{id}',              [UserController::class, 'getAuthorInfoAndNovels']);

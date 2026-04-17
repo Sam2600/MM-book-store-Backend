@@ -37,6 +37,12 @@ return [
     "SE019" => "Already unlocked!",
     "SE020" => "Insufficient coins",
 
+    "SS011" => "If that email is registered, a password reset link has been sent.",
+    "SS012" => "Password reset successfully. Please log in with your new password.",
+
+    "SE021" => "Invalid or expired reset link.",
+    "SE022" => "Reset link has expired. Please request a new one.",
+
     //for attribute
     "Data" => "Data",
     "Counterparty" =>  "Counterparty",

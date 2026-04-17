@@ -3,7 +3,7 @@
 <head>
    <meta charset="UTF-8">
    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-   <title>Payment Received – MM Book Store</title>
+   <title>Payment Received – Akkhayer</title>
 </head>
 <body style="margin:0;padding:0;background-color:#f1f5f9;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;">
 
@@ -17,7 +17,7 @@
                <!-- Header -->
                <tr>
                   <td align="center" style="background-color:#0f172a;padding:36px 40px;">
-                     <p style="margin:0;font-size:11px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:#94a3b8;">MM Book Store</p>
+                     <p style="margin:0;font-size:11px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:#94a3b8;">Akkhayer</p>
                      <h1 style="margin:8px 0 0 0;font-size:26px;font-weight:900;letter-spacing:1px;color:#ffffff;">Payment Received</h1>
                   </td>
                </tr>
@@ -116,7 +116,7 @@
                      </table>
 
                      <p style="margin:0;font-size:13px;font-weight:400;line-height:1.6;color:#94a3b8;">
-                        If you have any questions about this payment, please contact the MM Book Store team. Keep creating great content!
+                        If you have any questions about this payment, please contact the Akkhayer team. Keep creating great content!
                      </p>
 
                   </td>
@@ -125,7 +125,7 @@
                <!-- Footer -->
                <tr>
                   <td style="background-color:#f8fafc;border-top:1px solid #e2e8f0;padding:24px 40px;">
-                     <p style="margin:0;font-size:13px;font-weight:600;color:#0f172a;">MM Book Store</p>
+                     <p style="margin:0;font-size:13px;font-weight:600;color:#0f172a;">Akkhayer</p>
                      <p style="margin:4px 0 0 0;font-size:12px;font-weight:400;color:#94a3b8;">
                         Thank you for being an author on our platform.
                      </p>

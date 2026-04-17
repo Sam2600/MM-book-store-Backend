@@ -18,7 +18,7 @@ class PayoutConfirmedMail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Payment Received — MM Book Store',
+            subject: 'Payment Received — Akkhayer',
         );
     }
 

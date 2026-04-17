@@ -30,9 +30,10 @@ class NovelRepository implements NovelRepositoryInterface
          ->select(['novels.id', 'novels.title', 'novels.status', 'novels.cover_image'])
          ->withCount('views AS total_view_cnt')
          ->selectRaw('COUNT(novel_views.id) AS monthly_views')
+         ->selectRaw('(SELECT ROUND(AVG(r.rating), 1) FROM ratings r WHERE r.novel_id = novels.id AND r.deleted_at IS NULL) AS average_rating')
          ->with('categories:id,name')
          ->join('novel_views', 'novels.id', '=', 'novel_views.novel_id')
-         ->whereNull('novel_views.deleted_at') // Assuming soft deletes
+         ->whereNull('novel_views.deleted_at')
          ->where('novel_views.created_at', '>=', $weekStart)
          ->groupBy('novels.id')
          ->orderByRaw('COUNT(novel_views.novel_id) DESC')
@@ -42,7 +43,7 @@ class NovelRepository implements NovelRepositoryInterface
 
    public function getPopularAllTimeNovels(int $limit = 6)
    {
-      return Novel::with('categories')->select('id', 'title', 'description', 'cover_image')->orderByDesc('view_count')->take($limit)->get()->makeHidden(['created_at', 'updated_at']);
+      return Novel::with('categories')->select('id', 'title', 'description', 'cover_image', 'status')->selectRaw('view_count AS total_view_cnt')->orderByDesc('view_count')->take($limit)->get()->makeHidden(['created_at', 'updated_at']);
    }
 
    public function getPopularThisMonthNovels(int $limit = 12)
@@ -53,6 +54,7 @@ class NovelRepository implements NovelRepositoryInterface
          ->select(['novels.id', 'novels.title', 'novels.status', 'novels.cover_image'])
          ->withCount('views AS total_view_cnt')
          ->selectRaw('COUNT(novel_views.id) AS monthly_views')
+         ->selectRaw('(SELECT ROUND(AVG(r.rating), 1) FROM ratings r WHERE r.novel_id = novels.id AND r.deleted_at IS NULL) AS average_rating')
          ->with('categories:id,name')
          ->join('novel_views', 'novels.id', '=', 'novel_views.novel_id')
          ->whereNull('novel_views.deleted_at')
@@ -152,6 +154,7 @@ class NovelRepository implements NovelRepositoryInterface
    {
       return Novel::where('status', 'completed')
          ->select('id', 'title', 'cover_image', 'status', 'updated_at')
+         ->selectRaw('(SELECT ROUND(AVG(r.rating), 1) FROM ratings r WHERE r.novel_id = novels.id AND r.deleted_at IS NULL) AS average_rating')
          ->orderByDesc('updated_at')
          ->limit($limit)
          ->get();

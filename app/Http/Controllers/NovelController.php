@@ -354,6 +354,7 @@ class NovelController extends Controller
             $paginator = Novel::where('status', 'completed')
                 ->select('id', 'title', 'cover_image', 'status', 'updated_at')
                 ->orderByDesc('updated_at')
+                ->orderByDesc('id')
                 ->paginate(15);
 
             foreach ($paginator as $novel) {
@@ -389,9 +390,9 @@ class NovelController extends Controller
             }
 
             match ($request->query('sort', 'newest')) {
-                'oldest' => $query->orderBy('novels.created_at', 'asc'),
-                'rating' => $query->orderByDesc('average_rating'),
-                default  => $query->orderBy('novels.created_at', 'desc'),
+                'oldest' => $query->orderBy('novels.created_at', 'asc')->orderBy('novels.id', 'asc'),
+                'rating' => $query->orderByDesc('average_rating')->orderByDesc('novels.id'),
+                default  => $query->orderBy('novels.created_at', 'desc')->orderByDesc('novels.id'),
             };
 
             $paginator = $query->paginate(15);
@@ -505,6 +506,7 @@ class NovelController extends Controller
             ->whereHas('categories', function ($query) use ($id) {
                 $query->where('categories.id', $id);
             })
+            ->orderByDesc('novels.id')
             ->paginate(15);
 
             $disk = $this->getDisk();

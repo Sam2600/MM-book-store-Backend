@@ -79,7 +79,7 @@ class NovelRepository implements NovelRepositoryInterface
          ->whereNull('novel_views.deleted_at')
          ->where('novel_views.created_at', '>=', $weekStart)
          ->groupBy('novels.id')
-         ->orderByRaw('COUNT(novel_views.novel_id) DESC')
+         ->orderByRaw('COUNT(novel_views.novel_id) DESC, novels.id DESC')
          ->paginate($perPage);
    }
 
@@ -97,7 +97,7 @@ class NovelRepository implements NovelRepositoryInterface
          ->whereNull('novel_views.deleted_at')
          ->whereBetween('novel_views.created_at', [$monthStart, now()])
          ->groupBy('novels.id')
-         ->orderByRaw('COUNT(novel_views.novel_id) DESC')
+         ->orderByRaw('COUNT(novel_views.novel_id) DESC, novels.id DESC')
          ->paginate($perPage);
    }
 

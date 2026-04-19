@@ -416,6 +416,50 @@ class NovelController extends Controller
         }
     }
 
+    public function popularWeek(Request $request): JsonResponse
+    {
+        try {
+            $paginator = $this->novelI->getPopularWeekPaginated(15);
+
+            $disk    = $this->getDisk();
+            $storage = Storage::disk($disk);
+
+            $paginator->getCollection()->transform(function (Novel $novel) use ($storage) {
+                $novel->cover_image = !empty($novel->cover_image)
+                    ? $storage->url($novel->cover_image)
+                    : $storage->url(config('default.image.cover'));
+                return $novel;
+            });
+
+            return $this->success(__('messages.SS008'), $paginator);
+        } catch (\Throwable $th) {
+            $this->logException($th);
+            return $this->error(__('messages.SE010'), []);
+        }
+    }
+
+    public function popularMonth(Request $request): JsonResponse
+    {
+        try {
+            $paginator = $this->novelI->getPopularMonthPaginated(15);
+
+            $disk    = $this->getDisk();
+            $storage = Storage::disk($disk);
+
+            $paginator->getCollection()->transform(function (Novel $novel) use ($storage) {
+                $novel->cover_image = !empty($novel->cover_image)
+                    ? $storage->url($novel->cover_image)
+                    : $storage->url(config('default.image.cover'));
+                return $novel;
+            });
+
+            return $this->success(__('messages.SS008'), $paginator);
+        } catch (\Throwable $th) {
+            $this->logException($th);
+            return $this->error(__('messages.SE010'), []);
+        }
+    }
+
     public function search(Request $request): JsonResponse
     {
         try {

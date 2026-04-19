@@ -65,6 +65,42 @@ class NovelRepository implements NovelRepositoryInterface
          ->get();
    }
 
+   public function getPopularWeekPaginated(int $perPage = 15)
+   {
+      $weekStart = Carbon::now()->subWeek()->startOfDay();
+
+      return Novel::query()
+         ->select(['novels.id', 'novels.title', 'novels.status', 'novels.cover_image'])
+         ->withCount('views AS total_view_cnt')
+         ->selectRaw('COUNT(novel_views.id) AS weekly_views')
+         ->selectRaw('(SELECT ROUND(AVG(r.rating), 1) FROM ratings r WHERE r.novel_id = novels.id AND r.deleted_at IS NULL) AS average_rating')
+         ->with('categories:id,name')
+         ->join('novel_views', 'novels.id', '=', 'novel_views.novel_id')
+         ->whereNull('novel_views.deleted_at')
+         ->where('novel_views.created_at', '>=', $weekStart)
+         ->groupBy('novels.id')
+         ->orderByRaw('COUNT(novel_views.novel_id) DESC')
+         ->paginate($perPage);
+   }
+
+   public function getPopularMonthPaginated(int $perPage = 15)
+   {
+      $monthStart = now()->startOfMonth();
+
+      return Novel::query()
+         ->select(['novels.id', 'novels.title', 'novels.status', 'novels.cover_image'])
+         ->withCount('views AS total_view_cnt')
+         ->selectRaw('COUNT(novel_views.id) AS monthly_views')
+         ->selectRaw('(SELECT ROUND(AVG(r.rating), 1) FROM ratings r WHERE r.novel_id = novels.id AND r.deleted_at IS NULL) AS average_rating')
+         ->with('categories:id,name')
+         ->join('novel_views', 'novels.id', '=', 'novel_views.novel_id')
+         ->whereNull('novel_views.deleted_at')
+         ->whereBetween('novel_views.created_at', [$monthStart, now()])
+         ->groupBy('novels.id')
+         ->orderByRaw('COUNT(novel_views.novel_id) DESC')
+         ->paginate($perPage);
+   }
+
    public function getLatestNovels(int $limit = 6)
    {
       return Novel::with(['translator' => function($query) {

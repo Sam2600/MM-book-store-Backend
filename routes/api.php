@@ -43,6 +43,8 @@ Route::middleware('throttle:5,1')->group(function () {
 Route::get('/author/{id}',              [UserController::class, 'getAuthorInfoAndNovels']);
 Route::get('/novels',                   [NovelController::class, 'index']);
 Route::get('/novels/ended',             [NovelController::class, 'endedNovels']);
+Route::get('/novels/popular/week',      [NovelController::class, 'popularWeek']);
+Route::get('/novels/popular/month',     [NovelController::class, 'popularMonth']);
 Route::get('/novels/search',            [NovelController::class, 'search']);
 Route::get('/novels/browse',            [NovelController::class, 'browse']);
 Route::get('/novels/{id}',              [NovelController::class, 'show']);

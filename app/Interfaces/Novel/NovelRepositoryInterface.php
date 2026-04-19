@@ -31,4 +31,8 @@ interface NovelRepositoryInterface
    public function getEndedNovels(int $limit = 8);
 
    public function getAllEndedNovels();
+
+   public function getPopularWeekPaginated(int $perPage = 15);
+
+   public function getPopularMonthPaginated(int $perPage = 15);
 }

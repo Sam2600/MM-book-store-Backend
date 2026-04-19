@@ -23,7 +23,7 @@ class NovelFactory extends Factory
             'original_book_name' => $this->faker->sentence(3),
             'title' => $this->faker->sentence(3),
             'description' => $this->faker->paragraph,
-            'cover_image' => $this->faker->imageUrl(),
+            'cover_image' => null,
             'view_count' => $this->faker->numberBetween(0, 10000),
             'status' => $this->faker->randomElement(['ongoing', 'completed']),
         ];

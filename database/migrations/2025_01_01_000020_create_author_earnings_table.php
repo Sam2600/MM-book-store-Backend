@@ -1,0 +1,30 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::create('author_earnings', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('translator_id')->constrained('users');
+            $table->foreignId('novel_id')->constrained('novels');
+            $table->unsignedInteger('coins_earned');
+            $table->timestamp('earned_at');
+            $table->decimal('amount', 10, 2)->nullable();
+            $table->string('source')->default('ad_revenue');
+            $table->char('period', 7)->nullable();
+            $table->integer('rate_id')->nullable();
+            $table->softDeletes();
+            $table->timestamps();
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('author_earnings');
+    }
+};
